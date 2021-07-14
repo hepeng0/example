@@ -47,7 +47,7 @@
 <h3 id="堆外内存"><a href="#堆外内存" class="headerlink" title="堆外内存"></a>堆外内存</h3><p>如果碰到堆外内存溢出，那可真是太不幸了。首先堆外内存溢出表现就是物理常驻内存增长快，报错的话视使用方式都不确定，如果由于使用Netty导致的，那错误日志里可能会出现OutOfDirectMemoryError错误，如果直接是DirectByteBuffer，那会报OutOfMemoryError: Direct buffer memory。</p>
 <p>堆外内存溢出往往是和NIO的使用相关，一般我们先通过pmap来查看下进程占用的内存情况pmap -x pid | sort -rn -k3 | head -30，这段意思是查看对应pid倒序前30大的内存段。这边可以再一段时间后再跑一次命令看看内存增长情况，或者和正常机器比较可疑的内存段在哪里。</p>
 <p><img src="/2021/07/13/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%B7%AF/img_19.png" alt="img_19.png"></p>
-<p>我们如果确定有可疑的内存端，需要通过gdb来分析gdb –batch –pid {pid} -ex “dump memory filename.dump {内存起始地址} {内存起始地址+内存块大小}”</p>
+<p>我们如果确定有可疑的内存端，需要通过gdb来分析gdb —batch —pid {pid} -ex “dump memory filename.dump {内存起始地址} {内存起始地址+内存块大小}”</p>
 <p><img src="/2021/07/13/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%B7%AF/img_20.png" alt="img_20.png"></p>
 <p>获取dump文件后可用heaxdump进行查看hexdump -C filename | less，不过大多数看到的都是二进制乱码。</p>
 <p>NMT是Java7U40引入的HotSpot新特性，配合jcmd命令我们就可以看到具体内存组成了。需要在启动参数中加入 -XX:NativeMemoryTracking=summary 或者 -XX:NativeMemoryTracking=detail，会有略微性能损耗。</p>
