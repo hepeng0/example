@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2021-07-26T07:25:51.436Z</updated>
+  <updated>2021-08-02T11:10:48.456Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -15,6 +15,82 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>代码规范之BigDecimal的equals方法等值比较引坑</title>
+    <link href="http://example.com/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/"/>
+    <id>http://example.com/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/</id>
+    <published>2021-08-02T10:54:13.000Z</published>
+    <updated>2021-08-02T11:10:48.456Z</updated>
+    
+    <content type="html"><![CDATA[<p>BigDecimal，相信对于很多人来说都不陌生，很多人都知道他的用法，这是一种java.math包中提供的一种可以用来进行精确运算的类型。</p><p>很多人都知道，在进行金额表示、金额计算等场景，不能使用double、float等类型，而是要使用对精度支持的更好的BigDecimal。</p><p>所以，很多支付、电商、金融等业务中，BigDecimal的使用非常频繁。而且不得不说这是一个非常好用的类，其内部自带了很多方法，如加，减，乘，除等运算方法都是可以直接调用的。</p><p>除了需要用BigDecimal表示数字和进行数字运算以外，代码中还经常需要对于数字进行相等判断。</p><p>关于BigDecimal等值判断的这个知识点，在最新版的《阿里巴巴Java开发手册》中也有说明：<br><img src="/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/img_1.png"></p><p>那么，为什么会有这样的要求呢？背后的思考是什么呢？</p><p>其实，我在之前的CodeReview中，看到过以下这样的低级错误：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if(bigDecimal == bigDecimal1)&#123;</span><br><span class="line">    // 两个数相等</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>这种错误，相信聪明的读者一眼就可以看出问题，因为BigDecimal是对象，所以不能用==来判断两个数字的值是否相等。</p><p>以上这种问题，在有一定的经验之后，还是可以避免的，但是聪明的读者，看一下以下这行代码，你觉得他有问题吗：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if(bigDecimal.equals(bigDecimal1))&#123;</span><br><span class="line">    // 两个数相等</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>可以明确的告诉大家，以上这种写法，可能得到的结果和你预想的不一样！</p><p>先来做个实验，运行以下代码：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">BigDecimal bigDecimal = new BigDecimal(1);</span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal1 = new BigDecimal(1);</span><br><span class="line"></span><br><span class="line">System.out.println(bigDecimal.equals(bigDecimal1));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal2 = new BigDecimal(1);</span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal3 = new BigDecimal(1.0);</span><br><span class="line"></span><br><span class="line">System.out.println(bigDecimal2.equals(bigDecimal3));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal4 = new BigDecimal(&quot;1&quot;);</span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal5 = new BigDecimal(&quot;1.0&quot;);</span><br><span class="line"></span><br><span class="line">System.out.println(bigDecimal4.equals(bigDecimal5));</span><br></pre></td></tr></table></figure><p>以上代码，输出结果为：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">true</span><br><span class="line"></span><br><span class="line">true</span><br><span class="line"></span><br><span class="line">false</span><br></pre></td></tr></table></figure><h3 id="BigDecimal的equals原理"><a href="#BigDecimal的equals原理" class="headerlink" title="BigDecimal的equals原理"></a>BigDecimal的equals原理</h3><p>通过以上代码示例，我们发现，在使用BigDecimal的equals方法对1和1.0进行比较的时候，有的时候是true（当使用int、double定义BigDecimal时），有的时候是false（当使用String定义BigDecimal时）。</p><p>那么，为什么会出现这样的情况呢，我们先来看下BigDecimal的equals方法。</p><p>在BigDecimal的JavaDoc中其实已经解释了其中原因：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Compares this  BigDecimal with the specified Object for equality.  Unlike compareTo, this method considers two BigDecimal objects equal only if they are equal in value and scale (thus 2.0 is not equal to 2.00 when compared by  this method)</span><br></pre></td></tr></table></figure><p>大概意思就是，equals方法和compareTo并不一样，equals方法会比较两部分内容，分别是<strong>值(value)<strong>和</strong>标度(scale)</strong></p><p><img src="/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/img_2.png"></p><p>到这里，我们大概解释清楚了，之所以equals比较bigDecimal4和bigDecimal5的结果是false，是因为标度不同。</p><p>那么，为什么标度不同呢？为什么bigDecimal2和bigDecimal3的标度是一样的（当使用int、double定义BigDecimal时），而bigDecimal4和bigDecimal5却不一样（当使用String定义BigDecimal时）呢？</p><h3 id="为什么标度不同"><a href="#为什么标度不同" class="headerlink" title="为什么标度不同"></a>为什么标度不同</h3><p>这个就涉及到BigDecimal的标度问题了，这个问题其实是比较复杂的，由于不是本文的重点，这里面就简单介绍一下吧。</p><p>首先，BigDecimal一共有以下4个构造方法：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">BigDecimal(int)</span><br><span class="line"></span><br><span class="line">BigDecimal(double) </span><br><span class="line"></span><br><span class="line">BigDecimal(long) </span><br><span class="line"></span><br><span class="line">BigDecimal(String)</span><br></pre></td></tr></table></figure><p>以上四个方法，创建出来的的BigDecimal的标度是不同的。</p><ul><li><p><strong>BigDecimal(long) 和BigDecimal(int)</strong><br>首先，最简单的就是BigDecimal(long) 和BigDecimal(int)，<strong>因为是整数，所以标度就是0</strong></p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public BigDecimal(int val) &#123;</span><br><span class="line">  this.intCompact = val;</span><br><span class="line">  this.scale = 0;</span><br><span class="line">  this.intVal = null;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public BigDecimal(long val) &#123;</span><br><span class="line">  this.intCompact = val;</span><br><span class="line">  this.intVal = (val == INFLATED) ? INFLATED_BIGINT : null;</span><br><span class="line">  this.scale = 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li><li><p><strong>BigDecimal(double)</strong><br>而对于BigDecimal(double), 当我们使用new BigDecimal(0.1)创建一个BigDecimal 的时候，其实创建出来的值并不是正好等于0.1的，而是0.1000000000000000055511151231257827021181583404541015625 。这是因为doule自身表示的只是一个近似值。</p><p>那么，无论我们使用new BigDecimal(0.1)还是new BigDecimal(0.10)定义，他的近似值都是0.1000000000000000055511151231257827021181583404541015625这个，那么他的标度就是这个数字的位数，即55。</p><p><img src="/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/img_3.png"> </p><p>其他的浮点数也同样的道理。对于new BigDecimal(1.0)这样的形式来说，因为他本质上也是个整数，所以他创建出来的数字的标度就是0。</p><p>所以，因为BigDecimal(1.0)和BigDecimal(1.00)的标度是一样的，所以在使用equals方法比较的时候，得到的结果就是true。</p></li><li><p><strong>BigDecimal(string)</strong><br>而对于BigDecimal(double) ，当我们使用new BigDecimal(“0.1”)创建一个BigDecimal 的时候，其实创建出来的值正好就是等于0.1的。那么他的标度也就是1。</p><p>如果使用new BigDecimal(“0.10000”)，那么创建出来的数就是0.10000，标度也就是5。</p></li></ul><p>所以，因为BigDecimal(“1.0”)和BigDecimal(“1.00”)的标度不一样，所以在使用equals方法比较的时候，得到的结果就是false。</p><h3 id="如何比较BigDecimal"><a href="#如何比较BigDecimal" class="headerlink" title="如何比较BigDecimal"></a>如何比较BigDecimal</h3><p>前面，我们解释了BigDecimal的equals方法，其实不只是会比较数字的值，还会对其标度进行比较。</p><p>所以，当我们使用equals方法判断判断两个数是否相等的时候，是极其严格的。</p><p>那么，如果我们只想判断两个BigDecimal的值是否相等，那么该如何判断呢？</p><p><strong>BigDecimal中提供了compareTo方法，这个方法就可以只比较两个数字的值，如果两个数相等，则返回0。</strong></p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">BigDecimal bigDecimal4 = new BigDecimal(&quot;1&quot;);</span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal5 = new BigDecimal(&quot;1.0000&quot;);</span><br><span class="line"></span><br><span class="line">System.out.println(bigDecimal4.compareTo(bigDecimal5));</span><br></pre></td></tr></table></figure><p>以上代码，输出结果:</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0</span><br></pre></td></tr></table></figure><p>其源码如下：</p><p><img src="/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/img_4.png"></p><h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>BigDecimal是一个非常好用的表示高精度数字的类，其中提供了很多丰富的方法。</p><p>但是，他的equals方法使用的时候需要谨慎，因为他在比较的时候，不仅比较两个数字的值，还会比较他们的标度，只要这两个因素有一个是不相等的，那么结果也是false</p><p>如果读者想要对两个BigDecimal的数值进行比较的话，可以使用compareTo方法。</p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;p&gt;BigDecimal，相信对于很多人来说都不陌生，很多人都知道他的用法，这是一种java.math包中提供的一种可以用来进行精确运算的类型。&lt;/p&gt;
+&lt;p&gt;很多人都知道，在进行金额表示、金额计算等场景，不能使用double、float等类型，而是要使用对精度支持的更好的Bi</summary>
+      
+    
+    
+    
+    <category term="代码规范" scheme="http://example.com/categories/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83/"/>
+    
+    
+    <category term="代码规范" scheme="http://example.com/tags/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>消息中间件Kafka系列之Kafka消息发送者核心参数与工作机制</title>
+    <link href="http://example.com/2021/07/26/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E6%B6%88%E6%81%AF%E5%8F%91%E9%80%81%E8%80%85%E6%A0%B8%E5%BF%83%E5%8F%82%E6%95%B0%E4%B8%8E%E5%B7%A5%E4%BD%9C%E6%9C%BA%E5%88%B6/"/>
+    <id>http://example.com/2021/07/26/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E6%B6%88%E6%81%AF%E5%8F%91%E9%80%81%E8%80%85%E6%A0%B8%E5%BF%83%E5%8F%82%E6%95%B0%E4%B8%8E%E5%B7%A5%E4%BD%9C%E6%9C%BA%E5%88%B6/</id>
+    <published>2021-07-26T10:46:45.000Z</published>
+    <updated>2021-07-27T01:33:53.620Z</updated>
+    
+    <content type="html"><![CDATA[<p>本文将从Kafka Producer的配置属性为突破口，结合源码深入提炼出Kafka Producer的工作机制，方便大家更好使用Kafka Producer，并且胸有成竹的进行性能调优。</p><p>将Kafka Producer相关的参数分成如下几个类型：</p><ul><li>常规参数</li><li>工作原理(性能相关)参数(图解)</li></ul><p>本文会结合图解方式，重点阐述与Kafka生产者运作机制密切相关的参数。</p><h2 id="Producer-架构"><a href="#Producer-架构" class="headerlink" title="Producer 架构"></a>Producer 架构</h2><p><img src="/2021/07/26/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E6%B6%88%E6%81%AF%E5%8F%91%E9%80%81%E8%80%85%E6%A0%B8%E5%BF%83%E5%8F%82%E6%95%B0%E4%B8%8E%E5%B7%A5%E4%BD%9C%E6%9C%BA%E5%88%B6/img.png"><br>总的来说，Kafka生产端发送数据过程涉及到序列化器Serializer、分区器Partitioner，消息缓存池Accumulator，还可能会涉及到拦截器Interceptor（这部分暂不做介绍）。</p><h3 id="常规参数"><a href="#常规参数" class="headerlink" title="常规参数"></a>常规参数</h3><p>为了更好的使用Kafka Producer，首先介绍一下几个基本参数。</p><ul><li><strong>bootstrap.servers</strong>: 配置Kafka broker的服务器地址列表，多个用英文逗号分开，可以不必写全，Kafka内部有自动感知Kafka broker的机制。</li><li><strong>client.dns.lookup</strong>: 客户端寻找bootstrap地址的方式，支持如下两种方式：<ul><li><strong>resolve_canonical_bootstrap_servers_only</strong>: 这种方式，会依据bootstrap.servers提供的主机名(hostname)，根据主机上的名称服务返回其IP地址的数组(InetAddress.getAllByName)，然后依次获取inetAddress.getCanonicalHostName()，再建立tcp连接。<br>  <strong>一个主机可配置多个网卡，如果启用该功能，应该可以有效利用多网卡的优势，降低Broker的网络端负载压力。</strong></li><li><strong>use_all_dns_ips</strong>: 这种方式会直接使用bootstrap.servers中提供的hostname、port创建tcp连接，默认选项。</li></ul></li><li><strong>compression.type</strong>: 消息的压缩算法，目前可选值：none、gzip、snappy、lz4、zstd，<strong>默认不压缩，建议与Kafka服务器配置的一样</strong>，当然Kafka服务端可以配置的压缩类型为 producer，即采用与发送方配置的压缩类型。<strong>发送方与Broker 服务器采用相同的压缩类型，可有效避免在Broker服务端进行消息的压缩与解压缩，大大降低Broker的CPU使用压力</strong>。</li><li><strong>client.id</strong>: 客户端ID，如果不设置默认为producer-递增，<strong>强烈建议设置该值，尽量包含ip,port,pid</strong>。</li><li><strong>send.buffer.bytes</strong>: 网络通道(TCP)的发送缓存区大小，默认为128K。</li><li><strong>receive.buffer.bytes</strong>: 网络通道(TCP)的接收缓存区大小，默认为32K。</li><li><strong>reconnect.backoff.ms</strong>: 重新建立链接的等待时长，默认为50ms，属于底层网络参数，基本无需关注。</li><li><strong>reconnect.backoff.max.ms</strong>: 重新建立链接的最大等待时长，默认为1s，连续两次对同一个连接建立重连，等待时间会在reconnect.backoff.ms的初始值上成指数级递增，但超过max后，将不再指数级递增。</li><li><strong>key.serializer</strong>: 消息key的序列化策略，为org.apache.kafka.common.serialization接口的实现类。</li><li><strong>value.serializer</strong>: 消息体的序列化策略</li><li><strong>partitioner.class</strong>: 消息发送队列负载算法，其默 DefaultPartitioner，路由算法如下：<ul><li>如果指定了 key ，则使用 key 的 hashcode 与分区数取模。</li><li>如果未指定 key，则轮询所有的分区。</li></ul></li><li><strong>interceptor.classes</strong>: 拦截器列表，kafka运行在消息真正发送到broker之前对消息进行拦截加工。</li><li><strong>enable.idempotence</strong>: 是否开启发送端的幂等，这个机制后续会重点剖析其实现原理，默认为false。</li><li><strong>transaction.timeout.ms</strong>: 事务协调器等待客户端的事务状态反馈的最大超时时间，默认为60s。</li><li><strong>transactional.id</strong>: 事务id,用于在一个事务中唯一标识一个客户端。</li></ul>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;p&gt;本文将从Kafka Producer的配置属性为突破口，结合源码深入提炼出Kafka Producer的工作机制，方便大家更好使用Kafka Producer，并且胸有成竹的进行性能调优。&lt;/p&gt;
+&lt;p&gt;将Kafka Producer相关的参数分成如下几个类型：&lt;/p&gt;
+&lt;</summary>
+      
+    
+    
+    
+    <category term="中间件" scheme="http://example.com/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
+    
+    
+    <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
+    
+    <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
+    
+    <category term="MQ" scheme="http://example.com/tags/MQ/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>消息中间件Kafka系列之Kafka消息拉取机制简读</title>
+    <link href="http://example.com/2021/07/26/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E6%B6%88%E6%81%AF%E6%8B%89%E5%8F%96%E6%9C%BA%E5%88%B6%E7%AE%80%E8%AF%BB/"/>
+    <id>http://example.com/2021/07/26/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E6%B6%88%E6%81%AF%E6%8B%89%E5%8F%96%E6%9C%BA%E5%88%B6%E7%AE%80%E8%AF%BB/</id>
+    <published>2021-07-26T10:45:45.000Z</published>
+    <updated>2021-07-27T01:13:53.112Z</updated>
+    
+    
+    
+    
+    <category term="中间件" scheme="http://example.com/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
+    
+    
+    <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
+    
+    <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
+    
+    <category term="MQ" scheme="http://example.com/tags/MQ/"/>
+    
+  </entry>
   
   <entry>
     <title>数据库连接池之HikariCP实现详解</title>
@@ -49,9 +125,9 @@
     <link href="http://example.com/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/"/>
     <id>http://example.com/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/</id>
     <published>2021-07-20T10:03:58.000Z</published>
-    <updated>2021-07-22T07:05:19.227Z</updated>
+    <updated>2021-07-26T10:07:59.308Z</updated>
     
-    <content type="html"><![CDATA[<h3 id="预备知识"><a href="#预备知识" class="headerlink" title="预备知识"></a>预备知识</h3><p><img src="/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/img.png"></p><h4 id="HW（High-Watermark）："><a href="#HW（High-Watermark）：" class="headerlink" title="HW（High Watermark）："></a>HW（High Watermark）：</h4><ul><li>在分区高水位以下的消息被认为是已提交消息，反之就是未提交消息；</li><li>定义消息可见性，即用来标识分区下的哪些消息是可以被消费者消费的；</li><li>小于等于HW值的所有消息都被认为是“已备份”的（replicated）；<h4 id="LEO（Log-End-Offset）"><a href="#LEO（Log-End-Offset）" class="headerlink" title="LEO（Log End Offset）"></a>LEO（Log End Offset）</h4></li><li>记录了该副本底层日志(log)中下一条消息的位移值（注意是下一条消息！！）</li><li>数字 15 所在的方框是虚线，这就说明，这个副本当前只有 15 条消息，位移值是从 0 到 14，下一条新消息的位移是 15；</li></ul><h3 id="更新机制"><a href="#更新机制" class="headerlink" title="更新机制"></a>更新机制</h3><p><img src="/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/img_1.png"></p><p><strong>流程如下</strong></p><ol><li>生产者写入消息到leader副本</li><li>leader副本LEO值更新</li><li>follower副本尝试拉取消息，发现有消息可以拉取，更新自身LEO</li><li>follower副本继续尝试拉取消息，这时会更新remote副本LEO，同时会更新leader副本的HW</li><li>完成4步骤后，leader副本会将已更新过的HW发送给所有follower副本</li><li>follower副本接收leader副本HW，更新自身的HW</li></ol><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Kafka副本之间的数据复制既不是完全的同步复制，也不是单纯的异步复制；</span><br><span class="line">Leader副本的HW更新原则：取当前leader副本的LEO和所有remote副本的LEO的最小值</span><br><span class="line">Follower副本的HW更新原则：取leader副本发送的HW和自身的LEO中的最小值</span><br></pre></td></tr></table></figure>]]></content>
+    <content type="html"><![CDATA[<h3 id="预备知识"><a href="#预备知识" class="headerlink" title="预备知识"></a>预备知识</h3><p><img src="/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/img.png"></p><h4 id="HW（High-Watermark）："><a href="#HW（High-Watermark）：" class="headerlink" title="HW（High Watermark）："></a>HW（High Watermark）：</h4><ul><li>在分区高水位以下的消息被认为是已提交消息，反之就是未提交消息；</li><li>定义消息可见性，即用来标识分区下的哪些消息是可以被消费者消费的；</li><li>小于等于HW值的所有消息都被认为是“已备份”的（replicated）。</li></ul><h4 id="LEO（Log-End-Offset）"><a href="#LEO（Log-End-Offset）" class="headerlink" title="LEO（Log End Offset）"></a>LEO（Log End Offset）</h4><ul><li>记录了该副本底层日志(log)中下一条消息的位移值（注意是下一条消息！！）</li><li>数字 15 所在的方框是虚线，这就说明，这个副本当前只有 15 条消息，位移值是从 0 到 14，下一条新消息的位移是 15；</li></ul><h3 id="更新机制"><a href="#更新机制" class="headerlink" title="更新机制"></a>更新机制</h3><p><img src="/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/img_1.png"></p><p><strong>流程如下</strong></p><ol><li>生产者写入消息到leader副本</li><li>leader副本LEO值更新</li><li>follower副本尝试拉取消息，发现有消息可以拉取，更新自身LEO</li><li>follower副本继续尝试拉取消息，这时会更新remote副本LEO，同时会更新leader副本的HW</li><li>完成4步骤后，leader副本会将已更新过的HW发送给所有follower副本</li><li>follower副本接收leader副本HW，更新自身的HW</li></ol><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Kafka副本之间的数据复制既不是完全的同步复制，也不是单纯的异步复制；</span><br><span class="line">Leader副本的HW更新原则：取当前leader副本的LEO和所有remote副本的LEO的最小值</span><br><span class="line">Follower副本的HW更新原则：取leader副本发送的HW和自身的LEO中的最小值</span><br></pre></td></tr></table></figure>]]></content>
     
     
       
@@ -458,93 +534,6 @@
     <category term="分布式" scheme="http://example.com/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
     
     <category term="设计理念" scheme="http://example.com/tags/%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>高并发系统03之高并发三大利器之降级</title>
-    <link href="http://example.com/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E9%99%8D%E7%BA%A7/"/>
-    <id>http://example.com/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E9%99%8D%E7%BA%A7/</id>
-    <published>2021-07-09T08:28:03.000Z</published>
-    <updated>2021-07-14T08:49:21.170Z</updated>
-    
-    <content type="html"><![CDATA[<p><strong>高并发三大利器</strong></p><ul><li>缓存  –  缓存目的是提升系统访问速度和增大系统能处理的容量，可谓是抗高并发流量的银弹</li><li>降级  –  当服务出问题或者影响到核心流程的性能则需要暂时屏蔽掉，待高峰或者问题解决后再打开</li><li>限流  –  通过对并发访问/请求进行限速或者一个时间窗口内的的请求进行限速来保护系统，一旦达到限制速率则可以拒绝服务（定向到错误页或告知资源没有了）、排队或等待（比如秒杀、评论、下单）、降级（返回兜底数据或默认数据，如商品详情页库存默认有货）、特权处理(优先处理需要高保障的用户群体)</li></ul><h3 id="什么是服务降级"><a href="#什么是服务降级" class="headerlink" title="什么是服务降级"></a>什么是服务降级</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">服务降级是当服务器压力剧增的情况下，根据当前业务情况及流量对一些服务和页面有策略的降级，以此释放服务器资源以保证核心任务的正常运行。</span><br></pre></td></tr></table></figure><p>服务降级主要用于当整个微服务架构整体的负载超出了预设的上限阈值或即将到来的流量预计将会超过预设的阈值时，为了保证重要或基本的服务能正常运行，将一些 不重要 或 不紧急 的服务或任务进行服务的 <strong>延迟使用</strong> 或 <strong>暂停使用</strong>。</p><p>降级就是为了解决资源不足和访问量增加的矛盾。</p><h3 id="服务降级方式"><a href="#服务降级方式" class="headerlink" title="服务降级方式"></a>服务降级方式</h3><ul><li><strong>延迟服务</strong>：定时任务处理、或者mq延时处理。比如新用户注册送多少优惠券可以提示用户优惠券会24小时到达用户账号中，我们可以选择再凌晨流量较小的时候，批量去执行送券</li><li><strong>页面降级</strong>：页面点击按钮全部置灰，或者页面调整成为一个静态页面显示“系统正在维护中，。。。。”。</li><li><strong>关闭非核心服务</strong>：比如电商关闭推荐服务、关闭运费险、退货退款等。保证主流程的核心服务下单付款就好。</li><li><strong>写降级</strong>：比如秒杀抢购，我们可以只进行Cache的更新返回，然后通过mq异步扣减库存到DB，保证最终一致性即可，此时可以将DB降级为Cache。</li><li><strong>读降级</strong>：比如多级缓存模式，如果后端服务有问题，可以降级为只读缓存，这种方式适用于对读一致性要求不高的场景。</li></ul><h3 id="服务熔断"><a href="#服务熔断" class="headerlink" title="服务熔断"></a>服务熔断</h3><h4 id="服务雪崩"><a href="#服务雪崩" class="headerlink" title="服务雪崩"></a>服务雪崩</h4><p>多个微服务之间调用的时候，比如A服务调用了B服务，B服务调用了C服务，然后C服务由于机器宕机或者网略故障， 然后就会导致B服务调用C服务的时候超时，然后A服务调用B服务也会超时，最终整个链路都不可用了，导致整个系统不可用就跟雪蹦一样。</p><h4 id="雪崩效应产生的几种场景"><a href="#雪崩效应产生的几种场景" class="headerlink" title="雪崩效应产生的几种场景"></a>雪崩效应产生的几种场景</h4><p><strong>突增流量</strong>：比如一大波爬虫，或者黑客攻击等。<br><strong>程序bug</strong>：代码死循环，或者资源未释放等。<br><strong>硬件原因</strong>：机器宕机、机房断电、光纤被挖断等。  </p><h4 id="服务熔断-1"><a href="#服务熔断-1" class="headerlink" title="服务熔断"></a>服务熔断</h4><p>熔断机制是应对雪崩效应的一种微服务链路保护机制，在互联网系统中当下游的服务因为某种原因突然变得不可用或响应过慢，上游服务为了保证自己整体服务的可用性，暂时不再继续调用目标服务，直接快速返回，快速释放资源。如果目标服务情况好转则恢复调用。</p><h3 id="熔断和降级的比较"><a href="#熔断和降级的比较" class="headerlink" title="熔断和降级的比较"></a>熔断和降级的比较</h3><h4 id="共性"><a href="#共性" class="headerlink" title="共性"></a>共性</h4><ul><li>目的很一致：都是从可用性可靠性着想，为防止系统的整体缓慢甚至崩溃，采用的技术手段，都是为了保证系统的稳定。</li><li>最终表现类似:对于两者来说，最终让用户体验到的是某些功能暂时不可达或不可用；</li><li>粒度一般都是服务级别:当然，业界也有不少更细粒度的做法，比如做到数据持久层（允许查询，不允许增删改）；</li><li>自治性要求很高: 熔断模式一般都是服务基于策略的自动触发，比如</li><li>降级虽说可人工干预，但在微服务架构下，完全靠人显然不可能，开关预置、配置中心都是必要手段；</li></ul><h4 id="差异性"><a href="#差异性" class="headerlink" title="差异性"></a>差异性</h4><ul><li>触发原因不太一样，服务熔断一般是某个服务（下游服务）故障引起，而服务降级一般是从整体负荷考虑；</li><li>管理目标的层次不太一样，熔断其实是一个框架级的处理，每个微服务都需要（无层级之分），而降级一般需要对业务有层级之分（比如降级一般是从最外围服务开始）熔断是降级方式的一种体现。</li></ul>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;p&gt;&lt;strong&gt;高并发三大利器&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;缓存  –  缓存目的是提升系统访问速度和增大系统能处理的容量，可谓是抗高并发流量的银弹&lt;/li&gt;
-&lt;li&gt;降级  –  当服务出问题或者影响到核心流程的性能则需要暂时屏蔽掉，待高峰或者问题解决后再</summary>
-      
-    
-    
-    
-    <category term="JAVA开发" scheme="http://example.com/categories/JAVA%E5%BC%80%E5%8F%91/"/>
-    
-    
-    <category term="高并发" scheme="http://example.com/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
-    
-    <category term="降级" scheme="http://example.com/tags/%E9%99%8D%E7%BA%A7/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>高并发系统02之高并发三大利器之缓存</title>
-    <link href="http://example.com/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F02%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E7%BC%93%E5%AD%98/"/>
-    <id>http://example.com/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F02%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E7%BC%93%E5%AD%98/</id>
-    <published>2021-07-09T08:27:12.000Z</published>
-    <updated>2021-07-14T08:49:21.143Z</updated>
-    
-    <content type="html"><![CDATA[<p><strong>高并发三大利器</strong></p><ul><li>缓存  –  缓存目的是提升系统访问速度和增大系统能处理的容量，可谓是抗高并发流量的银弹</li><li>降级  –  当服务出问题或者影响到核心流程的性能则需要暂时屏蔽掉，待高峰或者问题解决后再打开</li><li>限流  –  通过对并发访问/请求进行限速或者一个时间窗口内的的请求进行限速来保护系统，一旦达到限制速率则可以拒绝服务（定向到错误页或告知资源没有了）、排队或等待（比如秒杀、评论、下单）、降级（返回兜底数据或默认数据，如商品详情页库存默认有货）、特权处理(优先处理需要高保障的用户群体)</li></ul><h2 id="缓存分类"><a href="#缓存分类" class="headerlink" title="缓存分类"></a>缓存分类</h2><ul><li>分布式缓存： 如redis、memcached等</li><li>本地（进程内）缓存： 如ehcache、GuavaCache、Caffeine等</li></ul><h2 id="缓存特性"><a href="#缓存特性" class="headerlink" title="缓存特性"></a>缓存特性</h2><h3 id="命中率"><a href="#命中率" class="headerlink" title="命中率"></a>命中率</h3><p>命中率=命中数/（命中数+没有命中数）当某个请求能够通过访问缓存而得到响应时，称为缓存命中。缓存命中率越高，缓存的利用率也就越高。</p><h3 id="最大空间"><a href="#最大空间" class="headerlink" title="最大空间"></a>最大空间</h3><p>缓存中可以容纳最大元素的数量。当缓存存放的数据超过最大空间时，就需要根据淘汰算法来淘汰部分数据存放新到达的数据。</p><h3 id="淘汰算法"><a href="#淘汰算法" class="headerlink" title="淘汰算法"></a>淘汰算法</h3><p>缓存的存储空间有限制，当缓存空间被用满时，如何保证在稳定服务的同时有效提升命中率？这就由缓存淘汰算法来处理，设计适合自身数据特征的淘汰算法能够有效提升缓存命中率。<br>常见的淘汰算法有：</p><ul><li><p>FIFO(first in first out)「先进先出」<br>最先进入缓存的数据在缓存空间不够的情况下（超出最大元素限制）会被优先被清除掉，以腾出新的空间接受新的数据。策略算法主要比较缓存元素的创建时间。「适用于保证高频数据有效性场景，优先保障最新数据可用」。</p></li><li><p>LFU(less frequently used)「最少使用」<br>无论是否过期，根据元素的被使用次数判断，清除使用次数较少的元素释放空间。策略算法主要比较元素的hitCount（命中次数）。「适用于保证高频数据有效性场景」。</p></li><li><p>LRU(least recently used)「最近最少使用」<br>无论是否过期，根据元素最后一次被使用的时间戳，清除最远使用时间戳的元素释放空间。策略算法主要比较元素最近一次被get使用时间。「比较适用于热点数据场景，优先保证热点数据的有效性。」</p></li></ul><h2 id="本地缓存"><a href="#本地缓存" class="headerlink" title="本地缓存"></a>本地缓存</h2><p>常见本地缓存有以下几种实现方式：</p><p><img src="/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F02%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E7%BC%93%E5%AD%98/img.png"></p><p>其中性能最佳的是Caffeine，了解更详细信息参考： <a href="https://mp.weixin.qq.com/s?__biz=MzIyMjQwMTgyNA==&mid=2247483811&idx=1&sn=9d0b207044b5fe447169d630a7f77aab&scene=21#wechat_redirect">本地缓存性能之王</a></p><h2 id="分布式缓存"><a href="#分布式缓存" class="headerlink" title="分布式缓存"></a>分布式缓存</h2><p>分布式缓存详细信息参考redis系列文章</p><h2 id="缓存更新方案"><a href="#缓存更新方案" class="headerlink" title="缓存更新方案"></a>缓存更新方案</h2><p>我们一般的缓存更新主要有以下几种更新策略：</p><ul><li>先更新缓存，再更新数据库</li><li>先更新数据库，再更新缓存</li><li>先删除缓存，再更新数据库</li><li>先更新数据源库，再删除缓存</li></ul><p>至于选择哪种更新策略的话，没有绝对的选择，可以根据自己的业务情况来选择适合自己的。<br>不过一般推荐的话是选择 「<strong>先更新数据源库，再删除缓存</strong>」。</p><h2 id="缓存常见问题"><a href="#缓存常见问题" class="headerlink" title="缓存常见问题"></a>缓存常见问题</h2><h3 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h3><p>大量查询数据库不存在数据，缓存无数据，大量无效请求落库。</p><p>解决方案</p><ul><li>数据库不存在数据写空值入缓存</li></ul><h3 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h3><p>大规模缓存崩溃，大量请求落库。</p><p>解决方案</p><ul><li>事前：redis 高可用，主从+哨兵，redis cluster，避免全盘崩溃。</li><li>事中：本地 ehcache 缓存 + hystrix 限流&amp;降级，避免 MySQL 被打死。</li><li>事后：redis 持久化，一旦重启，自动从磁盘上加载数据，快速恢复缓存数据。</li></ul><h3 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h3><p>热点key失效瞬间大量请求落库。</p><p>解决方案</p><ul><li>基本不会发生更新的，则可尝试将该热点数据设置为永不过期。</li><li>更新不频繁且更新时间段，加互斥锁保证少量请求重建缓存。</li><li>数据更新频繁或更新时间长，定时线程主动重建缓存。</li></ul><h3 id="缓存双写一致性"><a href="#缓存双写一致性" class="headerlink" title="缓存双写一致性"></a>缓存双写一致性</h3><p>缓存使用方法：<br>读的时候，先读缓存，缓存没有的话，就读数据库，然后取出数据后放入缓存，同时返回响应。<br>更新的时候，先更新数据库，然后再删除缓存。</p><p>不一致解决方案</p><ul><li>初级：先删除缓存，再更新数据库。</li><li>高并发：使用队列做轻异步，多个并发更新请求阻塞过滤。（必须压测防止长时间阻塞积压）</li></ul><h3 id="redis并发竞争"><a href="#redis并发竞争" class="headerlink" title="redis并发竞争"></a>redis并发竞争</h3><p>多客户端同时并发写key，后来的数据先改。</p><p>解决方案：</p><ul><li>Redis存在CAS方案</li><li>实现分布式锁</li><li>写前判断版本号</li></ul>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;p&gt;&lt;strong&gt;高并发三大利器&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;缓存  –  缓存目的是提升系统访问速度和增大系统能处理的容量，可谓是抗高并发流量的银弹&lt;/li&gt;
-&lt;li&gt;降级  –  当服务出问题或者影响到核心流程的性能则需要暂时屏蔽掉，待高峰或者问题解决后再</summary>
-      
-    
-    
-    
-    <category term="JAVA开发" scheme="http://example.com/categories/JAVA%E5%BC%80%E5%8F%91/"/>
-    
-    
-    <category term="高并发" scheme="http://example.com/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
-    
-    <category term="缓存" scheme="http://example.com/tags/%E7%BC%93%E5%AD%98/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>高并发系统01之高并发三大利器之限流</title>
-    <link href="http://example.com/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F01%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E9%99%90%E6%B5%81/"/>
-    <id>http://example.com/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F01%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E9%99%90%E6%B5%81/</id>
-    <published>2021-07-09T07:54:02.000Z</published>
-    <updated>2021-07-14T08:49:21.177Z</updated>
-    
-    <content type="html"><![CDATA[<p><strong>高并发三大利器</strong></p><ul><li>缓存  –  缓存目的是提升系统访问速度和增大系统能处理的容量，可谓是抗高并发流量的银弹</li><li>降级  –  当服务出问题或者影响到核心流程的性能则需要暂时屏蔽掉，待高峰或者问题解决后再打开</li><li>限流  –  通过对并发访问/请求进行限速或者一个时间窗口内的的请求进行限速来保护系统，一旦达到限制速率则可以拒绝服务（定向到错误页或告知资源没有了）、排队或等待（比如秒杀、评论、下单）、降级（返回兜底数据或默认数据，如商品详情页库存默认有货）、特权处理(优先处理需要高保障的用户群体)</li></ul><h2 id="限流算法"><a href="#限流算法" class="headerlink" title="限流算法"></a>限流算法</h2><h3 id="快速失败-–-滑动时间窗口"><a href="#快速失败-–-滑动时间窗口" class="headerlink" title="快速失败 – 滑动时间窗口"></a>快速失败 – 滑动时间窗口</h3><p>滑动窗口算法是将时间周期分为N个小周期，分别记录每个小周期内访问次数，并且根据时间滑动删除过期的小周期<br><img src="/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F01%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E9%99%90%E6%B5%81/%E6%BB%91%E5%8A%A8%E6%97%B6%E9%97%B4%E7%AA%97%E5%8F%A3.png"></p><h3 id="排队等待-漏桶算法"><a href="#排队等待-漏桶算法" class="headerlink" title="排队等待 - 漏桶算法"></a>排队等待 - 漏桶算法</h3><p>漏桶算法思路很简单，水（请求）先进入到漏桶里，漏桶以一定的速度出水，当水流入速度过大会直接溢出，可以看出漏桶算法能强行限制数据的传输速率。<br><img src="/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F01%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E9%99%90%E6%B5%81/%E6%BC%8F%E6%A1%B6%E7%AE%97%E6%B3%95.png" alt="漏桶算法"></p><p>首先，我们有一个固定容量的桶，有水流进来，也有水流出去。对于流进来的水来说，我们无法预计一共有多少水会流进来，也无法预计水流的速度。但是对于流出去的水来说，这个桶可以固定水流出的速率。而且，当桶满了之后，多余的水将会溢出。</p><p>我们将算法中的水换成实际应用中的请求，我们可以看到漏桶算法天生就限制了请求的速度。当使用了漏桶算法，我们可以保证接口会以一个常速速率来处理请求。所以漏桶算法天生不会出现临界问题。<br>漏桶算法可以粗略的认为就是注水漏水过程，往桶中<strong>以一定速率流出水，以任意速率流入水</strong>，当水超过桶流量则丢弃，因为桶容量是不变的，保证了整体的速率。</p><h3 id="Warm-Up-令牌桶算法"><a href="#Warm-Up-令牌桶算法" class="headerlink" title="Warm Up - 令牌桶算法"></a>Warm Up - 令牌桶算法</h3><p>首先，我们有一个固定容量的桶，桶里存放着令牌（token）。<br>桶一开始是空的，token以 一个固定的速率r往桶里填充，直到达到桶的容量，多余的令牌将会被丢弃。<br>每当一个请求过来时，就会尝试从桶里移除一个令牌，如果没有令牌的话，请求无法通过。</p><p><img src="/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F01%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E9%99%90%E6%B5%81/aegar-6o1hz.png"></p><h4 id="解决问题："><a href="#解决问题：" class="headerlink" title="解决问题："></a>解决问题：</h4><ul><li>Warm Up（冷启动/预热）：通过”冷启动”，让通过的流量缓慢增加，在一定时间内逐渐增加到阈值上限，给冷系统一个预热的时间，避免冷系统被压垮。</li></ul><h3 id="各算法适用场景"><a href="#各算法适用场景" class="headerlink" title="各算法适用场景"></a>各算法适用场景</h3><ul><li>计数法用于简单粗暴的连接池数量等。</li><li>令牌桶可以用来保护自己，主要用来对调用者频率进行限流，为的是让自己不被打垮。所以如果自己本身有处理能力的时候，如果流量突发（实际消费能力强于配置的流量限制），那么实际处理速率可以超过配置的限制。</li><li>漏桶算法，这是用来保护他人，也就是保护他所调用的系统。主要场景是，当调用的第三方系统本身没有保护机制，或者有流量限制的时候，我们的调用速度不能超过他的限制，由于我们不能更改第三方系统，所以只有在主调方控制。这个时候，即使流量突发，也必须舍弃。因为消费能力是第三方决定的。</li></ul><p>** 简单粗暴场景用计数法。如果要让自己的系统不被打垮，用令牌桶。如果保证别人的系统不被打垮，用漏桶。**</p><h2 id="流量控制组件对比"><a href="#流量控制组件对比" class="headerlink" title="流量控制组件对比"></a>流量控制组件对比</h2><p><img src="/2021/07/09/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F01%E4%B9%8B%E9%AB%98%E5%B9%B6%E5%8F%91%E4%B8%89%E5%A4%A7%E5%88%A9%E5%99%A8%E4%B9%8B%E9%99%90%E6%B5%81/aegar-6o1hz.png"></p><h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p><a href="https://www.cnblogs.com/xuwc/p/9123078.html">高并发系统限流-漏桶算法和令牌桶算法</a></p>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;p&gt;&lt;strong&gt;高并发三大利器&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;缓存  –  缓存目的是提升系统访问速度和增大系统能处理的容量，可谓是抗高并发流量的银弹&lt;/li&gt;
-&lt;li&gt;降级  –  当服务出问题或者影响到核心流程的性能则需要暂时屏蔽掉，待高峰或者问题解决后再</summary>
-      
-    
-    
-    
-    <category term="JAVA开发" scheme="http://example.com/categories/JAVA%E5%BC%80%E5%8F%91/"/>
-    
-    
-    <category term="高并发" scheme="http://example.com/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
-    
-    <category term="限流" scheme="http://example.com/tags/%E9%99%90%E6%B5%81/"/>
     
   </entry>
   

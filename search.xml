@@ -4,6 +4,89 @@
   
     
     <entry>
+      <title>代码规范之BigDecimal的equals方法等值比较引坑</title>
+      <link href="/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/"/>
+      <url>/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/</url>
+      
+        <content type="html"><![CDATA[<p>BigDecimal，相信对于很多人来说都不陌生，很多人都知道他的用法，这是一种java.math包中提供的一种可以用来进行精确运算的类型。</p><p>很多人都知道，在进行金额表示、金额计算等场景，不能使用double、float等类型，而是要使用对精度支持的更好的BigDecimal。</p><p>所以，很多支付、电商、金融等业务中，BigDecimal的使用非常频繁。而且不得不说这是一个非常好用的类，其内部自带了很多方法，如加，减，乘，除等运算方法都是可以直接调用的。</p><p>除了需要用BigDecimal表示数字和进行数字运算以外，代码中还经常需要对于数字进行相等判断。</p><p>关于BigDecimal等值判断的这个知识点，在最新版的《阿里巴巴Java开发手册》中也有说明：<br><img src="/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/img_1.png"></p><p>那么，为什么会有这样的要求呢？背后的思考是什么呢？</p><p>其实，我在之前的CodeReview中，看到过以下这样的低级错误：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if(bigDecimal == bigDecimal1)&#123;</span><br><span class="line">    // 两个数相等</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>这种错误，相信聪明的读者一眼就可以看出问题，因为BigDecimal是对象，所以不能用==来判断两个数字的值是否相等。</p><p>以上这种问题，在有一定的经验之后，还是可以避免的，但是聪明的读者，看一下以下这行代码，你觉得他有问题吗：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if(bigDecimal.equals(bigDecimal1))&#123;</span><br><span class="line">    // 两个数相等</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>可以明确的告诉大家，以上这种写法，可能得到的结果和你预想的不一样！</p><p>先来做个实验，运行以下代码：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">BigDecimal bigDecimal = new BigDecimal(1);</span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal1 = new BigDecimal(1);</span><br><span class="line"></span><br><span class="line">System.out.println(bigDecimal.equals(bigDecimal1));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal2 = new BigDecimal(1);</span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal3 = new BigDecimal(1.0);</span><br><span class="line"></span><br><span class="line">System.out.println(bigDecimal2.equals(bigDecimal3));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal4 = new BigDecimal(&quot;1&quot;);</span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal5 = new BigDecimal(&quot;1.0&quot;);</span><br><span class="line"></span><br><span class="line">System.out.println(bigDecimal4.equals(bigDecimal5));</span><br></pre></td></tr></table></figure><p>以上代码，输出结果为：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">true</span><br><span class="line"></span><br><span class="line">true</span><br><span class="line"></span><br><span class="line">false</span><br></pre></td></tr></table></figure><h3 id="BigDecimal的equals原理"><a href="#BigDecimal的equals原理" class="headerlink" title="BigDecimal的equals原理"></a>BigDecimal的equals原理</h3><p>通过以上代码示例，我们发现，在使用BigDecimal的equals方法对1和1.0进行比较的时候，有的时候是true（当使用int、double定义BigDecimal时），有的时候是false（当使用String定义BigDecimal时）。</p><p>那么，为什么会出现这样的情况呢，我们先来看下BigDecimal的equals方法。</p><p>在BigDecimal的JavaDoc中其实已经解释了其中原因：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Compares this  BigDecimal with the specified Object for equality.  Unlike compareTo, this method considers two BigDecimal objects equal only if they are equal in value and scale (thus 2.0 is not equal to 2.00 when compared by  this method)</span><br></pre></td></tr></table></figure><p>大概意思就是，equals方法和compareTo并不一样，equals方法会比较两部分内容，分别是<strong>值(value)<strong>和</strong>标度(scale)</strong></p><p><img src="/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/img_2.png"></p><p>到这里，我们大概解释清楚了，之所以equals比较bigDecimal4和bigDecimal5的结果是false，是因为标度不同。</p><p>那么，为什么标度不同呢？为什么bigDecimal2和bigDecimal3的标度是一样的（当使用int、double定义BigDecimal时），而bigDecimal4和bigDecimal5却不一样（当使用String定义BigDecimal时）呢？</p><h3 id="为什么标度不同"><a href="#为什么标度不同" class="headerlink" title="为什么标度不同"></a>为什么标度不同</h3><p>这个就涉及到BigDecimal的标度问题了，这个问题其实是比较复杂的，由于不是本文的重点，这里面就简单介绍一下吧。</p><p>首先，BigDecimal一共有以下4个构造方法：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">BigDecimal(int)</span><br><span class="line"></span><br><span class="line">BigDecimal(double) </span><br><span class="line"></span><br><span class="line">BigDecimal(long) </span><br><span class="line"></span><br><span class="line">BigDecimal(String)</span><br></pre></td></tr></table></figure><p>以上四个方法，创建出来的的BigDecimal的标度是不同的。</p><ul><li><p><strong>BigDecimal(long) 和BigDecimal(int)</strong><br>首先，最简单的就是BigDecimal(long) 和BigDecimal(int)，<strong>因为是整数，所以标度就是0</strong></p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public BigDecimal(int val) &#123;</span><br><span class="line">  this.intCompact = val;</span><br><span class="line">  this.scale = 0;</span><br><span class="line">  this.intVal = null;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public BigDecimal(long val) &#123;</span><br><span class="line">  this.intCompact = val;</span><br><span class="line">  this.intVal = (val == INFLATED) ? INFLATED_BIGINT : null;</span><br><span class="line">  this.scale = 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li><li><p><strong>BigDecimal(double)</strong><br>而对于BigDecimal(double), 当我们使用new BigDecimal(0.1)创建一个BigDecimal 的时候，其实创建出来的值并不是正好等于0.1的，而是0.1000000000000000055511151231257827021181583404541015625 。这是因为doule自身表示的只是一个近似值。</p><p>那么，无论我们使用new BigDecimal(0.1)还是new BigDecimal(0.10)定义，他的近似值都是0.1000000000000000055511151231257827021181583404541015625这个，那么他的标度就是这个数字的位数，即55。</p><p><img src="/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/img_3.png"> </p><p>其他的浮点数也同样的道理。对于new BigDecimal(1.0)这样的形式来说，因为他本质上也是个整数，所以他创建出来的数字的标度就是0。</p><p>所以，因为BigDecimal(1.0)和BigDecimal(1.00)的标度是一样的，所以在使用equals方法比较的时候，得到的结果就是true。</p></li><li><p><strong>BigDecimal(string)</strong><br>而对于BigDecimal(double) ，当我们使用new BigDecimal(“0.1”)创建一个BigDecimal 的时候，其实创建出来的值正好就是等于0.1的。那么他的标度也就是1。</p><p>如果使用new BigDecimal(“0.10000”)，那么创建出来的数就是0.10000，标度也就是5。</p></li></ul><p>所以，因为BigDecimal(“1.0”)和BigDecimal(“1.00”)的标度不一样，所以在使用equals方法比较的时候，得到的结果就是false。</p><h3 id="如何比较BigDecimal"><a href="#如何比较BigDecimal" class="headerlink" title="如何比较BigDecimal"></a>如何比较BigDecimal</h3><p>前面，我们解释了BigDecimal的equals方法，其实不只是会比较数字的值，还会对其标度进行比较。</p><p>所以，当我们使用equals方法判断判断两个数是否相等的时候，是极其严格的。</p><p>那么，如果我们只想判断两个BigDecimal的值是否相等，那么该如何判断呢？</p><p><strong>BigDecimal中提供了compareTo方法，这个方法就可以只比较两个数字的值，如果两个数相等，则返回0。</strong></p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">BigDecimal bigDecimal4 = new BigDecimal(&quot;1&quot;);</span><br><span class="line"></span><br><span class="line">BigDecimal bigDecimal5 = new BigDecimal(&quot;1.0000&quot;);</span><br><span class="line"></span><br><span class="line">System.out.println(bigDecimal4.compareTo(bigDecimal5));</span><br></pre></td></tr></table></figure><p>以上代码，输出结果:</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0</span><br></pre></td></tr></table></figure><p>其源码如下：</p><p><img src="/2021/08/02/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BBigDecimal%E7%9A%84equals%E6%96%B9%E6%B3%95%E7%AD%89%E5%80%BC%E6%AF%94%E8%BE%83%E5%BC%95%E5%9D%91/img_4.png"></p><h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>BigDecimal是一个非常好用的表示高精度数字的类，其中提供了很多丰富的方法。</p><p>但是，他的equals方法使用的时候需要谨慎，因为他在比较的时候，不仅比较两个数字的值，还会比较他们的标度，只要这两个因素有一个是不相等的，那么结果也是false</p><p>如果读者想要对两个BigDecimal的数值进行比较的话，可以使用compareTo方法。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 代码规范 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 代码规范 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>消息中间件Kafka系列之Kafka消息发送者核心参数与工作机制</title>
+      <link href="/2021/07/26/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E6%B6%88%E6%81%AF%E5%8F%91%E9%80%81%E8%80%85%E6%A0%B8%E5%BF%83%E5%8F%82%E6%95%B0%E4%B8%8E%E5%B7%A5%E4%BD%9C%E6%9C%BA%E5%88%B6/"/>
+      <url>/2021/07/26/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E6%B6%88%E6%81%AF%E5%8F%91%E9%80%81%E8%80%85%E6%A0%B8%E5%BF%83%E5%8F%82%E6%95%B0%E4%B8%8E%E5%B7%A5%E4%BD%9C%E6%9C%BA%E5%88%B6/</url>
+      
+        <content type="html"><![CDATA[<p>本文将从Kafka Producer的配置属性为突破口，结合源码深入提炼出Kafka Producer的工作机制，方便大家更好使用Kafka Producer，并且胸有成竹的进行性能调优。</p><p>将Kafka Producer相关的参数分成如下几个类型：</p><ul><li>常规参数</li><li>工作原理(性能相关)参数(图解)</li></ul><p>本文会结合图解方式，重点阐述与Kafka生产者运作机制密切相关的参数。</p><h2 id="Producer-架构"><a href="#Producer-架构" class="headerlink" title="Producer 架构"></a>Producer 架构</h2><p><img src="/2021/07/26/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E6%B6%88%E6%81%AF%E5%8F%91%E9%80%81%E8%80%85%E6%A0%B8%E5%BF%83%E5%8F%82%E6%95%B0%E4%B8%8E%E5%B7%A5%E4%BD%9C%E6%9C%BA%E5%88%B6/img.png"><br>总的来说，Kafka生产端发送数据过程涉及到序列化器Serializer、分区器Partitioner，消息缓存池Accumulator，还可能会涉及到拦截器Interceptor（这部分暂不做介绍）。</p><h3 id="常规参数"><a href="#常规参数" class="headerlink" title="常规参数"></a>常规参数</h3><p>为了更好的使用Kafka Producer，首先介绍一下几个基本参数。</p><ul><li><strong>bootstrap.servers</strong>: 配置Kafka broker的服务器地址列表，多个用英文逗号分开，可以不必写全，Kafka内部有自动感知Kafka broker的机制。</li><li><strong>client.dns.lookup</strong>: 客户端寻找bootstrap地址的方式，支持如下两种方式：<ul><li><strong>resolve_canonical_bootstrap_servers_only</strong>: 这种方式，会依据bootstrap.servers提供的主机名(hostname)，根据主机上的名称服务返回其IP地址的数组(InetAddress.getAllByName)，然后依次获取inetAddress.getCanonicalHostName()，再建立tcp连接。<br>  <strong>一个主机可配置多个网卡，如果启用该功能，应该可以有效利用多网卡的优势，降低Broker的网络端负载压力。</strong></li><li><strong>use_all_dns_ips</strong>: 这种方式会直接使用bootstrap.servers中提供的hostname、port创建tcp连接，默认选项。</li></ul></li><li><strong>compression.type</strong>: 消息的压缩算法，目前可选值：none、gzip、snappy、lz4、zstd，<strong>默认不压缩，建议与Kafka服务器配置的一样</strong>，当然Kafka服务端可以配置的压缩类型为 producer，即采用与发送方配置的压缩类型。<strong>发送方与Broker 服务器采用相同的压缩类型，可有效避免在Broker服务端进行消息的压缩与解压缩，大大降低Broker的CPU使用压力</strong>。</li><li><strong>client.id</strong>: 客户端ID，如果不设置默认为producer-递增，<strong>强烈建议设置该值，尽量包含ip,port,pid</strong>。</li><li><strong>send.buffer.bytes</strong>: 网络通道(TCP)的发送缓存区大小，默认为128K。</li><li><strong>receive.buffer.bytes</strong>: 网络通道(TCP)的接收缓存区大小，默认为32K。</li><li><strong>reconnect.backoff.ms</strong>: 重新建立链接的等待时长，默认为50ms，属于底层网络参数，基本无需关注。</li><li><strong>reconnect.backoff.max.ms</strong>: 重新建立链接的最大等待时长，默认为1s，连续两次对同一个连接建立重连，等待时间会在reconnect.backoff.ms的初始值上成指数级递增，但超过max后，将不再指数级递增。</li><li><strong>key.serializer</strong>: 消息key的序列化策略，为org.apache.kafka.common.serialization接口的实现类。</li><li><strong>value.serializer</strong>: 消息体的序列化策略</li><li><strong>partitioner.class</strong>: 消息发送队列负载算法，其默 DefaultPartitioner，路由算法如下：<ul><li>如果指定了 key ，则使用 key 的 hashcode 与分区数取模。</li><li>如果未指定 key，则轮询所有的分区。</li></ul></li><li><strong>interceptor.classes</strong>: 拦截器列表，kafka运行在消息真正发送到broker之前对消息进行拦截加工。</li><li><strong>enable.idempotence</strong>: 是否开启发送端的幂等，这个机制后续会重点剖析其实现原理，默认为false。</li><li><strong>transaction.timeout.ms</strong>: 事务协调器等待客户端的事务状态反馈的最大超时时间，默认为60s。</li><li><strong>transactional.id</strong>: 事务id,用于在一个事务中唯一标识一个客户端。</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 中间件 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Kafka </tag>
+            
+            <tag> 消息中间件 </tag>
+            
+            <tag> MQ </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>消息中间件Kafka系列之Kafka消息拉取机制简读</title>
+      <link href="/2021/07/26/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E6%B6%88%E6%81%AF%E6%8B%89%E5%8F%96%E6%9C%BA%E5%88%B6%E7%AE%80%E8%AF%BB/"/>
+      <url>/2021/07/26/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E6%B6%88%E6%81%AF%E6%8B%89%E5%8F%96%E6%9C%BA%E5%88%B6%E7%AE%80%E8%AF%BB/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      <categories>
+          
+          <category> 中间件 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Kafka </tag>
+            
+            <tag> 消息中间件 </tag>
+            
+            <tag> MQ </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>数据库连接池之HikariCP实现详解</title>
       <link href="/2021/07/26/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BF%9E%E6%8E%A5%E6%B1%A0%E4%B9%8BHikariCP%E5%AE%9E%E7%8E%B0%E8%AF%A6%E8%A7%A3/"/>
       <url>/2021/07/26/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BF%9E%E6%8E%A5%E6%B1%A0%E4%B9%8BHikariCP%E5%AE%9E%E7%8E%B0%E8%AF%A6%E8%A7%A3/</url>
@@ -37,7 +120,7 @@
       <link href="/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/"/>
       <url>/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/</url>
       
-        <content type="html"><![CDATA[<h3 id="预备知识"><a href="#预备知识" class="headerlink" title="预备知识"></a>预备知识</h3><p><img src="/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/img.png"></p><h4 id="HW（High-Watermark）："><a href="#HW（High-Watermark）：" class="headerlink" title="HW（High Watermark）："></a>HW（High Watermark）：</h4><ul><li>在分区高水位以下的消息被认为是已提交消息，反之就是未提交消息；</li><li>定义消息可见性，即用来标识分区下的哪些消息是可以被消费者消费的；</li><li>小于等于HW值的所有消息都被认为是“已备份”的（replicated）；<h4 id="LEO（Log-End-Offset）"><a href="#LEO（Log-End-Offset）" class="headerlink" title="LEO（Log End Offset）"></a>LEO（Log End Offset）</h4></li><li>记录了该副本底层日志(log)中下一条消息的位移值（注意是下一条消息！！）</li><li>数字 15 所在的方框是虚线，这就说明，这个副本当前只有 15 条消息，位移值是从 0 到 14，下一条新消息的位移是 15；</li></ul><h3 id="更新机制"><a href="#更新机制" class="headerlink" title="更新机制"></a>更新机制</h3><p><img src="/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/img_1.png"></p><p><strong>流程如下</strong></p><ol><li>生产者写入消息到leader副本</li><li>leader副本LEO值更新</li><li>follower副本尝试拉取消息，发现有消息可以拉取，更新自身LEO</li><li>follower副本继续尝试拉取消息，这时会更新remote副本LEO，同时会更新leader副本的HW</li><li>完成4步骤后，leader副本会将已更新过的HW发送给所有follower副本</li><li>follower副本接收leader副本HW，更新自身的HW</li></ol><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Kafka副本之间的数据复制既不是完全的同步复制，也不是单纯的异步复制；</span><br><span class="line">Leader副本的HW更新原则：取当前leader副本的LEO和所有remote副本的LEO的最小值</span><br><span class="line">Follower副本的HW更新原则：取leader副本发送的HW和自身的LEO中的最小值</span><br></pre></td></tr></table></figure>]]></content>
+        <content type="html"><![CDATA[<h3 id="预备知识"><a href="#预备知识" class="headerlink" title="预备知识"></a>预备知识</h3><p><img src="/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/img.png"></p><h4 id="HW（High-Watermark）："><a href="#HW（High-Watermark）：" class="headerlink" title="HW（High Watermark）："></a>HW（High Watermark）：</h4><ul><li>在分区高水位以下的消息被认为是已提交消息，反之就是未提交消息；</li><li>定义消息可见性，即用来标识分区下的哪些消息是可以被消费者消费的；</li><li>小于等于HW值的所有消息都被认为是“已备份”的（replicated）。</li></ul><h4 id="LEO（Log-End-Offset）"><a href="#LEO（Log-End-Offset）" class="headerlink" title="LEO（Log End Offset）"></a>LEO（Log End Offset）</h4><ul><li>记录了该副本底层日志(log)中下一条消息的位移值（注意是下一条消息！！）</li><li>数字 15 所在的方框是虚线，这就说明，这个副本当前只有 15 条消息，位移值是从 0 到 14，下一条新消息的位移是 15；</li></ul><h3 id="更新机制"><a href="#更新机制" class="headerlink" title="更新机制"></a>更新机制</h3><p><img src="/2021/07/20/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/img_1.png"></p><p><strong>流程如下</strong></p><ol><li>生产者写入消息到leader副本</li><li>leader副本LEO值更新</li><li>follower副本尝试拉取消息，发现有消息可以拉取，更新自身LEO</li><li>follower副本继续尝试拉取消息，这时会更新remote副本LEO，同时会更新leader副本的HW</li><li>完成4步骤后，leader副本会将已更新过的HW发送给所有follower副本</li><li>follower副本接收leader副本HW，更新自身的HW</li></ol><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Kafka副本之间的数据复制既不是完全的同步复制，也不是单纯的异步复制；</span><br><span class="line">Leader副本的HW更新原则：取当前leader副本的LEO和所有remote副本的LEO的最小值</span><br><span class="line">Follower副本的HW更新原则：取leader副本发送的HW和自身的LEO中的最小值</span><br></pre></td></tr></table></figure>]]></content>
       
       
       <categories>
@@ -628,9 +711,9 @@
     
     
     <entry>
-      <title>tags</title>
-      <link href="/tags/index.html"/>
-      <url>/tags/index.html</url>
+      <title>categories</title>
+      <link href="/categories/index.html"/>
+      <url>/categories/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
@@ -639,9 +722,9 @@
     
     
     <entry>
-      <title>categories</title>
-      <link href="/categories/index.html"/>
-      <url>/categories/index.html</url>
+      <title>tags</title>
+      <link href="/tags/index.html"/>
+      <url>/tags/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
