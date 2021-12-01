@@ -1,0 +1,161 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="MQ详解及四大常用MQ对比"><meta name="keywords" content="消息中间件,MQ"><meta name="author" content="何鹏 [smile.hepeng@qq.com]"><meta name="copyright" content="何鹏 [smile.hepeng@qq.com]"><title>MQ详解及四大常用MQ对比 | 沉默者</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.9.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.9.0"><meta name="format-detection" content="telephone=no"><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  hexoVersion: '5.4.0'
+} </script><link rel="alternate" href="/atom.xml" title="沉默者" type="application/atom+xml">
+</head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="true"><div class="toggle-sidebar-info text-center"><span data-toggle="Toggle article">Toggle site</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">Catalog</div><div class="sidebar-toc__progress"><span class="progress-notice">You've read</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E6%A6%82%E8%BF%B0"><span class="toc-number">1.</span> <span class="toc-text">消息队列概述</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E5%8F%8A%E5%85%B6%E4%BC%98%E7%BC%BA%E7%82%B9"><span class="toc-number">1.1.</span> <span class="toc-text">消息队列使用场景及其优缺点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%BB%84%E6%88%90"><span class="toc-number">1.2.</span> <span class="toc-text">消息中间件组成</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Broker"><span class="toc-number">1.2.1.</span> <span class="toc-text">Broker</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Producer"><span class="toc-number">1.2.2.</span> <span class="toc-text">Producer</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Topic"><span class="toc-number">1.2.3.</span> <span class="toc-text">Topic</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Queue"><span class="toc-number">1.2.4.</span> <span class="toc-text">Queue</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Topic-VS-Queue"><span class="toc-number">1.2.5.</span> <span class="toc-text">Topic VS Queue</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Message"><span class="toc-number">1.2.6.</span> <span class="toc-text">Message</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6%E6%A8%A1%E5%BC%8F"><span class="toc-number">1.3.</span> <span class="toc-text">消息中间件模式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%82%B9%E5%AF%B9%E7%82%B9%EF%BC%88PTP%EF%BC%89"><span class="toc-number">1.3.1.</span> <span class="toc-text">点对点（PTP）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8F%91%E5%B8%83-%E8%AE%A2%E9%98%85-PUB-SUB"><span class="toc-number">1.3.2.</span> <span class="toc-text">发布&#x2F;订阅(PUB&#x2F;SUB)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6%E5%B8%B8%E7%94%A8%E5%8D%8F%E8%AE%AE"><span class="toc-number">1.4.</span> <span class="toc-text">消息中间件常用协议</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#AMQP-Advanced-Message-Queuing-Protocol-%E5%8D%8F%E8%AE%AE"><span class="toc-number">1.4.1.</span> <span class="toc-text">AMQP(Advanced Message Queuing Protocol)协议</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#MQTT%EF%BC%88Message-Queuing-Telemetry-Transport%EF%BC%8C%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%81%A5%E6%B5%8B%E4%BC%A0%E8%BE%93%EF%BC%89%E5%8D%8F%E8%AE%AE"><span class="toc-number">1.4.2.</span> <span class="toc-text">MQTT（Message Queuing Telemetry Transport，消息队列遥测传输）协议</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#STOMP%EF%BC%88Streaming-Text-Orientated-Message-Protocol%EF%BC%8C%E6%B5%81%E6%96%87%E6%9C%AC%E5%AE%9A%E5%90%91%E6%B6%88%E6%81%AF%E5%8D%8F%E8%AE%AE%EF%BC%89%E5%8D%8F%E8%AE%AE"><span class="toc-number">1.4.3.</span> <span class="toc-text">STOMP（Streaming Text Orientated Message Protocol，流文本定向消息协议）协议</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#XMPP%EF%BC%88Extensible-Messaging-and-Presence-Protocol%EF%BC%8C%E5%8F%AF%E6%89%A9%E5%B1%95%E6%B6%88%E6%81%AF%E5%A4%84%E7%90%86%E7%8E%B0%E5%9C%BA%E5%8D%8F%E8%AE%AE%EF%BC%89%E5%8D%8F%E8%AE%AE"><span class="toc-number">1.4.4.</span> <span class="toc-text">XMPP（Extensible Messaging and Presence Protocol，可扩展消息处理现场协议）协议</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%B6%E4%BB%96%E5%9F%BA%E4%BA%8ETCP-IP%E8%87%AA%E5%AE%9A%E4%B9%89%E7%9A%84%E5%8D%8F%E8%AE%AE"><span class="toc-number">1.4.5.</span> <span class="toc-text">其他基于TCP&#x2F;IP自定义的协议</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6MQ%E6%80%BB%E7%BB%93"><span class="toc-number">1.5.</span> <span class="toc-text">常用消息中间件MQ总结</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Kafka"><span class="toc-number">1.5.1.</span> <span class="toc-text">Kafka</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#RocketMQ"><span class="toc-number">1.5.2.</span> <span class="toc-text">RocketMQ</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#RabbitMQ"><span class="toc-number">1.5.3.</span> <span class="toc-text">RabbitMQ</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#ZeroMQ"><span class="toc-number">1.5.4.</span> <span class="toc-text">ZeroMQ</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Redis"><span class="toc-number">1.5.5.</span> <span class="toc-text">Redis</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BB%E8%A6%81%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%9A%84%E6%AF%94%E8%BE%83"><span class="toc-number">1.6.</span> <span class="toc-text">主要消息中间件的比较</span></a></li></ol></li></ol></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="https://img2.baidu.com/it/u=928705063,3876627980&amp;fm=26&amp;fmt=auto&amp;gp=0.jpg"></div><div class="author-info__name text-center">何鹏 [smile.hepeng@qq.com]</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">40</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">31</span></a><a class="author-info-articles__categories article-meta" href="/categories"><span class="pull-left">Categories</span><span class="pull-right">7</span></a></div></div></div><div id="content-outer"><div class="plain" id="top-container"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">沉默者</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span><span class="pull-right"><a class="site-page social-icon search"><i class="fa fa-search"></i><span> Search</span></a></span></div></div><div class="layout" id="content-inner"><article id="post"><div class="plain" id="post-title">MQ详解及四大常用MQ对比</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2021-08-02</time><span class="post-meta__separator">|</span><i class="fa fa-inbox" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"> 中间件</a><span class="post-meta__separator">|</span><span class="post-meta-wordcount"><span>Word count: </span><span class="word-count">2.5k</span><span class="post-meta__separator">|</span><span>Reading time: 7 min</span></span></div><div class="article-container" id="post-content"><h2 id="消息队列概述"><a href="#消息队列概述" class="headerlink" title="消息队列概述"></a>消息队列概述</h2><h3 id="消息队列使用场景及其优缺点"><a href="#消息队列使用场景及其优缺点" class="headerlink" title="消息队列使用场景及其优缺点"></a>消息队列使用场景及其优缺点</h3><ul>
+<li><p>消息队列使用场景</p>
+<ul>
+<li>异步通信<ul>
+<li>紧急重要（需要立刻响应）的业务放到该调用方法中，响应要求不高的使用消息队列，放到MQ队列中，供消费者处理。</li>
+<li>提高系统响应时长</li>
+</ul>
+</li>
+<li>削峰<ul>
+<li>过载保护和缓冲</li>
+</ul>
+</li>
+<li>解耦<ul>
+<li>降低工程间的强依赖程度，针对异构系统进行适配。</li>
+</ul>
+</li>
+<li>冗余<ul>
+<li>消息队列把数据进行持久化直到它们已经被完全处理，通过这一方式规避了数据丢失风险。</li>
+<li>许多消息队列所采用的”插入-获取-删除”范式中，在把一个消息从队列中删除之前，需要你的处理系统明确的指出该消息已经被处理完毕，从而确保你的数据被安全的保存直到你使用完毕。</li>
+</ul>
+</li>
+<li>保证执行顺序</li>
+<li>数据流处理<ul>
+<li>ELK</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>消息队列优点</p>
+<ul>
+<li>低耦合</li>
+<li>可靠投递</li>
+<li>广播</li>
+<li>流量控制</li>
+<li>最终一致性</li>
+<li>实时处理框架支撑等</li>
+</ul>
+</li>
+<li><p>消息队列的问题</p>
+<ul>
+<li>系统可用性降低<ul>
+<li>如何保证消息队列可用性？</li>
+</ul>
+</li>
+<li>系统复杂度提高<ul>
+<li>消息队列语义</li>
+<li>如何保证没有重复消费</li>
+<li>如何保证没有消息丢失</li>
+<li>如何保证消息顺序</li>
+</ul>
+</li>
+<li>一致性问题<ul>
+<li>部分消费成功部分消费失败？</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="消息中间件组成"><a href="#消息中间件组成" class="headerlink" title="消息中间件组成"></a>消息中间件组成</h3><h4 id="Broker"><a href="#Broker" class="headerlink" title="Broker"></a>Broker</h4><p>消息服务器，作为server提供消息核心服务</p>
+<h4 id="Producer"><a href="#Producer" class="headerlink" title="Producer"></a>Producer</h4><p>消息生产者，业务的发起方，负责生产消息传输给broker，</p>
+<h4 id="Topic"><a href="#Topic" class="headerlink" title="Topic"></a>Topic</h4><p>主题，发布订阅模式下的消息统一汇集地，不同生产者向topic发送消息，由MQ服务器分发到不同的订阅者，实现消息的<strong>广播</strong></p>
+<h4 id="Queue"><a href="#Queue" class="headerlink" title="Queue"></a>Queue</h4><p>队列，PTP模式下，特定生产者向特定queue发送消息，消费者订阅特定的queue完成指定消息的接收</p>
+<h4 id="Topic-VS-Queue"><a href="#Topic-VS-Queue" class="headerlink" title="Topic VS Queue"></a>Topic VS Queue</h4><ul>
+<li><p><strong>Queue</strong>: 实现了负载均衡，将producer生产的消息发送到消息队列中，由多个消费者消费。但一个消息只能被一个消费者接受，当没有消费者可用时，这个消息会被保存直到有一个可用的消费者。</p>
+</li>
+<li><p><strong>Topic</strong>: 实现了发布和订阅，当你发布一个消息，所有订阅这个topic的服务都能得到这个消息，所以从1到N个订阅者都能得到一个消息的拷贝。</p>
+</li>
+</ul>
+<h4 id="Message"><a href="#Message" class="headerlink" title="Message"></a>Message</h4><p>消息体，根据不同通信协议定义的固定格式进行编码的数据包，来封装业务数据，实现消息的传输</p>
+<h3 id="消息中间件模式"><a href="#消息中间件模式" class="headerlink" title="消息中间件模式"></a>消息中间件模式</h3><h4 id="点对点（PTP）"><a href="#点对点（PTP）" class="headerlink" title="点对点（PTP）"></a>点对点（PTP）</h4><p>PTP点对点： <strong>使用Queue作为通信载体</strong></p>
+<p><img src="/2021/08/02/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011037.png"></p>
+<p>说明：</p>
+<ul>
+<li>消息生产者生产消息发送到queue中，然后消息消费者从queue中取出并且消费消息。</li>
+<li>消息被消费以后，queue中不再存储，所以消息消费者不可能消费到已经被消费的消息。 Queue支持存在多个消费者，<strong>但是对一个消息而言，只会有一个消费者可以消费</strong>。</li>
+</ul>
+<h4 id="发布-订阅-PUB-SUB"><a href="#发布-订阅-PUB-SUB" class="headerlink" title="发布/订阅(PUB/SUB)"></a>发布/订阅(PUB/SUB)</h4><p>Pub/Sub发布订阅（广播）：<strong>使用topic作为通信载体</strong></p>
+<p><img src="/2021/08/02/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011041.png"></p>
+<p>说明：</p>
+<ul>
+<li>消息生产者（发布）将消息发布到topic中，同时有多个消息消费者（订阅）消费该消息。和点对点方式不同，<strong>发布到topic的消息会被所有订阅者消费</strong>。</li>
+</ul>
+<h3 id="消息中间件常用协议"><a href="#消息中间件常用协议" class="headerlink" title="消息中间件常用协议"></a>消息中间件常用协议</h3><h4 id="AMQP-Advanced-Message-Queuing-Protocol-协议"><a href="#AMQP-Advanced-Message-Queuing-Protocol-协议" class="headerlink" title="AMQP(Advanced Message Queuing Protocol)协议"></a>AMQP(Advanced Message Queuing Protocol)协议</h4><p>一个提供统一消息服务的应用层标准高级消息队列协议,是应用层协议的一个开放标准,为面向消息的中间件设计。</p>
+<p>基于此协议的客户端与消息中间件可传递消息，并不受客户端/中间件不同产品，不同开发语言等条件的限制。</p>
+<p>优点：可靠、通用</p>
+<h4 id="MQTT（Message-Queuing-Telemetry-Transport，消息队列遥测传输）协议"><a href="#MQTT（Message-Queuing-Telemetry-Transport，消息队列遥测传输）协议" class="headerlink" title="MQTT（Message Queuing Telemetry Transport，消息队列遥测传输）协议"></a>MQTT（Message Queuing Telemetry Transport，消息队列遥测传输）协议</h4><p>IBM开发的一个即时通讯协议，有可能成为物联网的重要组成部分。</p>
+<p>该协议支持所有平台，几乎可以把所有联网物品和外部连接起来，被用来当做传感器和致动器（比如通过Twitter让房屋联网）的通信协议。 </p>
+<p>优点：格式简洁、占用带宽小、移动端通信、PUSH、嵌入式系统</p>
+<h4 id="STOMP（Streaming-Text-Orientated-Message-Protocol，流文本定向消息协议）协议"><a href="#STOMP（Streaming-Text-Orientated-Message-Protocol，流文本定向消息协议）协议" class="headerlink" title="STOMP（Streaming Text Orientated Message Protocol，流文本定向消息协议）协议"></a>STOMP（Streaming Text Orientated Message Protocol，流文本定向消息协议）协议</h4><p>是一种为MOM(Message Oriented Middleware，面向消息的中间件)设计的简单文本协议。</p>
+<p>STOMP提供一个可互操作的连接格式，允许客户端与任意STOMP消息代理（Broker）进行交互。</p>
+<p>优点：命令模式（非topic\queue模式）</p>
+<h4 id="XMPP（Extensible-Messaging-and-Presence-Protocol，可扩展消息处理现场协议）协议"><a href="#XMPP（Extensible-Messaging-and-Presence-Protocol，可扩展消息处理现场协议）协议" class="headerlink" title="XMPP（Extensible Messaging and Presence Protocol，可扩展消息处理现场协议）协议"></a>XMPP（Extensible Messaging and Presence Protocol，可扩展消息处理现场协议）协议</h4><p>基于可扩展标记语言（XML）的协议，多用于即时消息（IM）以及在线现场探测。</p>
+<p>适用于服务器之间的准即时操作。</p>
+<p>核心是基于XML流传输，这个协议可能最终允许因特网用户向因特网上的其他任何人发送即时消息，即使其操作系统和浏览器不同。</p>
+<p>优点：通用公开、兼容性强、可扩展、安全性高，但XML编码格式占用带宽大</p>
+<h4 id="其他基于TCP-IP自定义的协议"><a href="#其他基于TCP-IP自定义的协议" class="headerlink" title="其他基于TCP/IP自定义的协议"></a>其他基于TCP/IP自定义的协议</h4><p>有些特殊框架（如：redis、kafka、zeroMq等）根据自身需要未严格遵循MQ规范，而是基于TCP\IP自行封装了一套协议，通过网络socket接口进行传输，实现了MQ的功能。</p>
+<h3 id="常用消息中间件MQ总结"><a href="#常用消息中间件MQ总结" class="headerlink" title="常用消息中间件MQ总结"></a>常用消息中间件MQ总结</h3><h4 id="Kafka"><a href="#Kafka" class="headerlink" title="Kafka"></a>Kafka</h4><p>Apache下的一个子项目，使用scala实现的一个高性能分布式Pub/Sub消息队列系统，具有以下特性：</p>
+<ul>
+<li>快速持久化：通过磁盘顺序读写与零拷贝机制，可以在O(1)的系统开销下进行消息持久化；</li>
+<li>高吞吐：在一台普通的服务器上既可以达到10W/s的吞吐速率；</li>
+<li>高堆积：支持topic下消费者较长时间离线，消息堆积量大；</li>
+<li>完全的分布式系统：Broker、Producer、Consumer都原生自动支持分布式，依赖zookeeper（已移除）自动实现复杂均衡；</li>
+<li>支持Hadoop数据并行加载：对于像Hadoop的一样的日志数据和离线分析系统，但又要求实时处理的限制，这是一个可行的解决方案。</li>
+</ul>
+<h4 id="RocketMQ"><a href="#RocketMQ" class="headerlink" title="RocketMQ"></a>RocketMQ</h4><p>阿里参照kafka设计思想使用java实现的一套mq。同时将阿里系内部多款mq产品（Notify、metaq）进行整合，只维护核心功能，去除了所有其他运行时依赖，保证核心功能最简化，在此基础上配合阿里上述其他开源产品实现不同场景下mq的架构，目前主要多用于订单交易系统。</p>
+<p>具有以下特点：</p>
+<ul>
+<li>能够保证严格的消息顺序</li>
+<li>提供针对消息的过滤功能</li>
+<li>提供丰富的消息拉取模式</li>
+<li>高效的订阅者水平扩展能力</li>
+<li>实时的消息订阅机制</li>
+<li>亿级消息堆积能力</li>
+</ul>
+<h4 id="RabbitMQ"><a href="#RabbitMQ" class="headerlink" title="RabbitMQ"></a>RabbitMQ</h4><p>使用Erlang编写的一个开源的消息队列，本身支持很多的协议：AMQP，XMPP, SMTP,STOMP，也正是如此，使的它变的非常重量级，更适合于企业级的开发。</p>
+<p>同时实现了Broker架构，核心思想是生产者不会将消息直接发送给队列，消息在发送给客户端时先在中心队列排队。</p>
+<p>对路由(Routing)，负载均衡(Load balance)、数据持久化都有很好的支持。</p>
+<p>多用于进行企业级的ESB整合。</p>
+<h4 id="ZeroMQ"><a href="#ZeroMQ" class="headerlink" title="ZeroMQ"></a>ZeroMQ</h4><p>号称最快的消息队列系统，专门为高吞吐量/低延迟的场景开发，在金融界的应用中经常使用，偏重于实时数据通信场景。</p>
+<p>ZMQ能够实现RabbitMQ不擅长的高级/复杂的队列，但是开发人员需要自己组合多种技术框架，开发成本高。</p>
+<p>因此ZeroMQ具有一个独特的非中间件的模式，更像一个socket library，你不需要安装和运行一个消息服务器或中间件，因为你的应用程序本身就是使用ZeroMQ API完成逻辑服务的角色。</p>
+<p>但是ZeroMQ仅提供<strong>非持久性的队列</strong>，如果down机，数据将会丢失。如：Twitter的Storm中使用ZeroMQ作为数据流的传输。</p>
+<p>ZeroMQ套接字是与传输层无关的：ZeroMQ套接字对所有传输层协议定义了统一的API接口。默认支持 进程内(inproc) ，进程间(IPC) ，多播，TCP协议，在不同的协议之间切换只要简单的改变连接字符串的前缀。可以在任何时候以最小的代价从进程间的本地通信切换到分布式下的TCP通信。ZeroMQ在背后处理连接建立，断开和重连逻辑。</p>
+<p>特性：</p>
+<ul>
+<li>无锁的队列模型：对于跨线程间的交互（用户端和session）之间的数据交换通道pipe，采用无锁的队列算法CAS；在pipe的两端注册有异步事件，在读或者写消息到pipe的时，会自动触发读写事件。</li>
+<li>批量处理的算法：对于批量的消息，进行了适应性的优化，可以批量的接收和发送消息。</li>
+<li>多核下的线程绑定，无须CPU切换：区别于传统的多线程并发模式，信号量或者临界区，zeroMQ充分利用多核的优势，每个核绑定运行一个工作者线程，避免多线程之间的CPU切换开销。</li>
+</ul>
+<h4 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h4><p>本身支持MQ功能，所以完全可以当做一个轻量级的队列服务来使用。</p>
+<p>实验表明：</p>
+<ul>
+<li>入队时，当数据比较小时Redis的性能要高于RabbitMQ，而如果数据大小超过了10K，Redis则慢的无法忍受；</li>
+<li>出队时，无论数据大小，Redis都表现出非常好的性能，而RabbitMQ的出队性能则远低于Redis。</li>
+</ul>
+<h3 id="主要消息中间件的比较"><a href="#主要消息中间件的比较" class="headerlink" title="主要消息中间件的比较"></a>主要消息中间件的比较</h3><p><img src="/2021/08/02/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011141.png"></p>
+</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a><a class="post-meta__tags" href="/tags/MQ/">MQ</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2021/08/02/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%B3%BB%E5%88%97%E4%B9%8B%E6%AD%BB%E4%BF%A1%E3%80%81%E5%BB%B6%E8%BF%9F%E3%80%81%E9%87%8D%E8%AF%95%E9%98%9F%E5%88%97/"><i class="fa fa-chevron-left">  </i><span>消息中间件系列之死信、延迟、重试队列</span></a></div><div class="next-post pull-right"><a href="/2021/07/13/%E4%BB%A3%E7%A0%81%E4%BC%98%E5%8C%96%E6%80%BB%E7%BB%93/%E4%BB%A3%E7%A0%81%E8%A7%84%E8%8C%83%E4%B9%8BJAVA%E4%BB%A3%E7%A0%81%E5%AE%89%E5%85%A8%E6%8C%87%E5%8D%97/"><span>代码规范之JAVA代码安全指南</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '83850031ee87c27765eb',
+  clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',
+  repo: 'blob-comment',
+  owner: 'hepeng0',
+  admin: 'hepeng0',
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN'
+})
+gitalk.render('gitalk-container')</script></div></div><footer><div class="layout" id="footer"><div class="copyright">&copy;2018 - 2021 By 何鹏 [smile.hepeng@qq.com]</div><div class="framework-info"><span>Driven - </span><a target="_blank" rel="noopener" href="http://hexo.io"><span>Hexo</span></a><span class="footer-separator">|</span><span>Theme - </span><a target="_blank" rel="noopener" href="https://github.com/Molunerfinn/hexo-theme-melody"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.9.0"></script><script src="/js/fancybox.js?version=1.9.0"></script><script src="/js/sidebar.js?version=1.9.0"></script><script src="/js/copy.js?version=1.9.0"></script><script src="/js/fireworks.js?version=1.9.0"></script><script src="/js/transition.js?version=1.9.0"></script><script src="/js/scroll.js?version=1.9.0"></script><script src="/js/head.js?version=1.9.0"></script><script src="/js/search/local-search.js"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+  $('#top-container').addClass('is-mobile')
+}</script><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">Local search</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts"></div></div></div><hr><div id="local-search-results"><div id="local-hits"></div><div id="local-stats"><div class="local-search-stats__hr" id="hr"><span>Powered by</span> <a target="_blank" rel="noopener" href="https://github.com/wzpan/hexo-generator-search" style="color:#49B1F5;">hexo-generator-search</a></div></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div></body></html>

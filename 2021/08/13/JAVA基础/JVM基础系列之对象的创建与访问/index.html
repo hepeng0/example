@@ -1,0 +1,124 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="JVM基础系列之对象的创建与访问"><meta name="keywords" content="JVM"><meta name="author" content="何鹏 [smile.hepeng@qq.com]"><meta name="copyright" content="何鹏 [smile.hepeng@qq.com]"><title>JVM基础系列之对象的创建与访问 | 沉默者</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.9.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.9.0"><meta name="format-detection" content="telephone=no"><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  hexoVersion: '5.4.0'
+} </script><link rel="alternate" href="/atom.xml" title="沉默者" type="application/atom+xml">
+</head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="true"><div class="toggle-sidebar-info text-center"><span data-toggle="Toggle article">Toggle site</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">Catalog</div><div class="sidebar-toc__progress"><span class="progress-notice">You've read</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1"><span class="toc-number">1.</span> <span class="toc-text">对象</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="toc-number">1.1.</span> <span class="toc-text">对象的创建</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%A3%80%E6%9F%A5"><span class="toc-number">1.1.1.</span> <span class="toc-text">类加载检查</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%88%86%E9%85%8D%E5%86%85%E5%AD%98"><span class="toc-number">1.1.2.</span> <span class="toc-text">分配内存</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96%E9%9B%B6%E5%80%BC"><span class="toc-number">1.1.3.</span> <span class="toc-text">初始化零值</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E8%AE%BE%E7%BD%AE%E5%AF%B9%E8%B1%A1%E5%A4%B4"><span class="toc-number">1.1.4.</span> <span class="toc-text">设置对象头</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%89%A7%E8%A1%8C-init-%E6%96%B9%E6%B3%95"><span class="toc-number">1.1.5.</span> <span class="toc-text">执行 init 方法</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80"><span class="toc-number">1.2.</span> <span class="toc-text">对象的内存布局</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%A4%B4"><span class="toc-number">1.2.1.</span> <span class="toc-text">对象头</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AE%9E%E4%BE%8B%E6%95%B0%E6%8D%AE-instance-data"><span class="toc-number">1.2.2.</span> <span class="toc-text">实例数据(instance data)</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AF%B9%E9%BD%90%E5%A1%AB%E5%85%85-padding"><span class="toc-number">1.2.3.</span> <span class="toc-text">对齐填充(padding)</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E7%9A%84%E8%AE%BF%E9%97%AE%E5%AE%9A%E4%BD%8D"><span class="toc-number">1.3.</span> <span class="toc-text">对象的访问定位</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%8F%A5%E6%9F%84%E8%AE%BF%E9%97%AE%E5%AF%B9%E8%B1%A1"><span class="toc-number">1.3.1.</span> <span class="toc-text">句柄访问对象</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%9B%B4%E6%8E%A5%E6%8C%87%E9%92%88%E8%AE%BF%E9%97%AE%E5%AF%B9%E8%B1%A1"><span class="toc-number">1.3.2.</span> <span class="toc-text">直接指针访问对象</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E6%96%B0%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E5%85%A8%E6%B5%81%E7%A8%8B"><span class="toc-number">1.4.</span> <span class="toc-text">创建一个新对象的内存分配全流程</span></a></li></ol></li></ol></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="https://img2.baidu.com/it/u=928705063,3876627980&amp;fm=26&amp;fmt=auto&amp;gp=0.jpg"></div><div class="author-info__name text-center">何鹏 [smile.hepeng@qq.com]</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">40</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">31</span></a><a class="author-info-articles__categories article-meta" href="/categories"><span class="pull-left">Categories</span><span class="pull-right">7</span></a></div></div></div><div id="content-outer"><div class="plain" id="top-container"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">沉默者</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span><span class="pull-right"><a class="site-page social-icon search"><i class="fa fa-search"></i><span> Search</span></a></span></div></div><div class="layout" id="content-inner"><article id="post"><div class="plain" id="post-title">JVM基础系列之对象的创建与访问</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2021-08-13</time><span class="post-meta__separator">|</span><i class="fa fa-inbox" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/JAVA%E5%9F%BA%E7%A1%80/"> JAVA基础</a><span class="post-meta__separator">|</span><span class="post-meta-wordcount"><span>Word count: </span><span class="word-count">1.8k</span><span class="post-meta__separator">|</span><span>Reading time: 5 min</span></span></div><div class="article-container" id="post-content"><h3 id="对象"><a href="#对象" class="headerlink" title="对象"></a>对象</h3><h4 id="对象的创建"><a href="#对象的创建" class="headerlink" title="对象的创建"></a>对象的创建</h4><p><img src="/2021/08/13/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E4%B8%8E%E8%AE%BF%E9%97%AE/f301a9680197b8c1538bc25cf3823c32.jpg" alt="对象创建过程"></p>
+<h5 id="类加载检查"><a href="#类加载检查" class="headerlink" title="类加载检查"></a>类加载检查</h5><p>虚拟机遇到一条 new 指令时: </p>
+<ol>
+<li>检查这个指令的参数是否能在常量池中定位到这个类的符号引用<ul>
+<li>若常量池中没有这个类的符号引用，说明这个类还没有被定义，抛出ClassNotFoundException</li>
+</ul>
+</li>
+<li>这个符号引用代表的类是否已被加载过、解析和初始化过。<ul>
+<li>如果有，为新生对象分配内存</li>
+<li>如果没有，必须先执行相应的类加载过程。</li>
+</ul>
+</li>
+</ol>
+<h5 id="分配内存"><a href="#分配内存" class="headerlink" title="分配内存"></a>分配内存</h5><p>对象所需的内存大小在类加载完成后便可确定，为对象分配空间的任务等同于把一块确定大小的内存从 Java 堆中划分出来。</p>
+<p><code>一个对象所需的内存大小是在这个对象所属类被定义完就能确定的, 因此一个类所生产的所有对象的内存大小是一样的</code></p>
+<p>分配方式无非有两种方法：</p>
+<p><img src="/2021/08/13/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E4%B8%8E%E8%AE%BF%E9%97%AE/da8bf89a0c0434b587b2b37bb1bc3547.png" alt="java类内存分配"></p>
+<ul>
+<li>“指针碰撞”： 通过一个类似于指针的东西为对象分配内存，前提是堆空间是相对规整的。</li>
+<li>“空闲列表”： 堆空间不规整，使用一个列表记录了哪些空间是空闲的，分配内存的时候会更新列表。 </li>
+</ul>
+<p><code>这是两种不同的方法，具体选择那种分配方式由 Java 堆是否规整决定，而 Java 堆是否规整又由所采用的垃圾收集器是否带有压缩整理功能决定。值得注意的是，复制算法内存也是规整的。</code></p>
+<p><strong>java类内存分配如何保证并发线程安全</strong></p>
+<p>多线程并发时会出现正在给对象 A 分配内存，还没来得及修改指针，对象 B 又用这个指针分配内存，这样就出现问题了。解决这种问题有两种方案：</p>
+<ul>
+<li>CAS+失败重试<ul>
+<li>采用同步方法，使用 CAS 配上失败重试的方式保证更新操作的原子性。</li>
+</ul>
+</li>
+<li>本地线程分配缓冲(Thread Local Allocation Buffer, TLAB)<ul>
+<li>为每一个线程预先在 Eden 区分配一块儿内存(线程私有)，JVM 在给线程中的对象分配内存时，首先在 TLAB 分配，当对象大于 TLAB 中的剩余内存或 TLAB 的内存已用尽时，再采用上述的 CAS 进行内存分配</li>
+<li>扩展阅读： <a target="_blank" rel="noopener" href="https://juejin.cn/post/6925217498723778568">TLAB</a></li>
+</ul>
+</li>
+</ul>
+<h5 id="初始化零值"><a href="#初始化零值" class="headerlink" title="初始化零值"></a>初始化零值</h5><p>虚拟机需要将分配到的内存空间都初始化为零值（不包括对象头)</p>
+<p><code>注意零值不是初始化方法指定的值，数字设置为0，布尔设置为false</code></p>
+<p>保证了对象的实例字段在 Java 代码中可以不赋初始值就直接使用，程序能访问到这些字段的数据类型所对应的零值。</p>
+<h5 id="设置对象头"><a href="#设置对象头" class="headerlink" title="设置对象头"></a>设置对象头</h5><p>虚拟机要对对象进行必要的设置，例如</p>
+<ul>
+<li>这个对象是那个类的实例</li>
+<li>如何才能找到类的元数据信息</li>
+<li>对象的哈希码</li>
+<li>对象的 GC 分代年龄等信息。</li>
+</ul>
+<p>这些信息存放在对象头中。</p>
+<ul>
+<li>另外，根据虚拟机当前运行状态的不同，如是否启用偏向锁等，对象头会有不同的设置方式。</li>
+</ul>
+<h5 id="执行-init-方法"><a href="#执行-init-方法" class="headerlink" title="执行 init 方法"></a>执行 init 方法</h5><p>在上⾯⼯作都完成之后，从虚拟机的视⻆来看，⼀个新的对象已经产⽣了，但从Java 程序的视⻆来看，对象创建才刚开始，⽅法还没有执⾏，所有的字段都还为零</p>
+<p>把对象按照程序员的意愿进行初始化，这样一个真正可用的对象才算完全产生出来。</p>
+<p><strong>初始化顺序</strong></p>
+<p>在new B一个实例时首先要进行类的装载。（<strong>类只有在使用New调用创建的时候才会被java类装载器装入</strong>）</p>
+<ul>
+<li>先装载父类A，完成静态动作（包括静态代码和变量，它们的级别是相同的，按照代码中出现的顺序初始化）</li>
+<li>再装载子类B，完成静态动作</li>
+</ul>
+<p>类装载完成，开始进行实例化</p>
+<ul>
+<li>父类A的成员实例化（非静态代码）</li>
+<li>父类A的构造方法</li>
+<li>子类B的成员实例化（非静态代码）</li>
+<li>子类B的构造方法</li>
+</ul>
+<h4 id="对象的内存布局"><a href="#对象的内存布局" class="headerlink" title="对象的内存布局"></a>对象的内存布局</h4><p>在HotSpot虚拟机里，对象在堆内存中的存储布局可以划分为三个部分：对象头（Header）、实例数据（Instance Data）和对齐填充（Padding）。</p>
+<img src="/2021/08/13/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E4%B8%8E%E8%AE%BF%E9%97%AE/08/13/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E4%B8%8E%E8%AE%BF%E9%97%AE/img.png" class>
+
+<h5 id="对象头"><a href="#对象头" class="headerlink" title="对象头"></a>对象头</h5><p>对象头主要划分为三个部分</p>
+<ul>
+<li><p>存储对象自身的运行时数据(markword)</p>
+<ul>
+<li>哈希码[jvm计算得到，对象重写的hashcode未写入对象头]、</li>
+<li>GC 分代年龄: 扩展阅读: <a href="file:///G:\code\example\doc\java\Java多线程.md">从对象头状态变迁看内置锁实现</a></li>
+<li>锁状态标志</li>
+</ul>
+</li>
+<li><p>类型指针（class pointer）</p>
+<ul>
+<li>即对象指向它的类元数据的指针，虚拟机通过这个指针来确定这个对象是那个类的实例。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Klass Word  这里其实是虚拟机设计的一个oop-klass model模型，这里的OOP是指Ordinary Object Pointer（普通对象指针），看起来像个指针实际上是藏在指针里的对象。而 klass 则包含 元数据和方法信息，用来描述 Java 类。它在64位虚拟机开启压缩指针的环境下占用 32bits 空间。</span><br></pre></td></tr></table></figure></li>
+<li><p>数组长度（对象数组）</p>
+</li>
+</ul>
+<h5 id="实例数据-instance-data"><a href="#实例数据-instance-data" class="headerlink" title="实例数据(instance data)"></a>实例数据(instance data)</h5><p>对象真正存储的有效信息，在程序中所定义的各种类型的字段内容</p>
+<p>存储顺序会受到虚拟机分配策略参数（FieldsAllocationStyle）和字段在 Java 源码中定义顺序的影响</p>
+<p>分配策略:相同宽度的字段总是放在一起，比如double和long</p>
+<h5 id="对齐填充-padding"><a href="#对齐填充-padding" class="headerlink" title="对齐填充(padding)"></a>对齐填充(padding)</h5><p>对齐填充部分不是必然存在的，也没有什么特别的含义，仅仅起占位作用。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">由于HotSpot规定对象的大小必须是8的整数倍，对象头刚好是整数倍，如果实例数据不是的话，就需要占位符对齐填充。</span><br></pre></td></tr></table></figure>
+
+<h4 id="对象的访问定位"><a href="#对象的访问定位" class="headerlink" title="对象的访问定位"></a>对象的访问定位</h4><p>对象的访问方式由虚拟机决定，java虚拟机提供两种主流的方式：句柄访问对象和直接指针访问对象</p>
+<h5 id="句柄访问对象"><a href="#句柄访问对象" class="headerlink" title="句柄访问对象"></a>句柄访问对象</h5><p>Java 堆中将会划分出一块内存来作为句柄池，reference 中存储的就是对象的句柄地址，而句柄中包含了对象实例数据与类型数据各自的具体地址信息；</p>
+<img src="/2021/08/13/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E4%B8%8E%E8%AE%BF%E9%97%AE/08/13/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E4%B8%8E%E8%AE%BF%E9%97%AE/img_1.png" class>
+
+<p>优点:引用中存储的是稳定的句柄地址,在对象被移动【垃圾收集时移动对象是常态】只需改变句柄中实例数据的指针，不需要改动引用【ref】本身。</p>
+<h5 id="直接指针访问对象"><a href="#直接指针访问对象" class="headerlink" title="直接指针访问对象"></a>直接指针访问对象</h5><p>Java 堆对象的布局中就必须考虑如何放置访问类型数据的相关信息，而reference 中存储的直接就是对象的地址。</p>
+<img src="/2021/08/13/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E4%B8%8E%E8%AE%BF%E9%97%AE/08/13/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E4%B8%8E%E8%AE%BF%E9%97%AE/img_2.png" class>
+
+<p>优点:优势很明显，就是速度快，相比于句柄访问少了一次指针定位的开销时间。【可能是出于Java中对象的访问时十分频繁的,平时我们常用的JVM HotSpot采用此种方式】</p>
+<h4 id="创建一个新对象的内存分配全流程"><a href="#创建一个新对象的内存分配全流程" class="headerlink" title="创建一个新对象的内存分配全流程"></a>创建一个新对象的内存分配全流程</h4></div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/JVM/">JVM</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2021/11/26/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/%E5%9F%BA%E4%BA%8EJVMTI%E6%8A%80%E6%9C%AF%E7%9A%84Jar%E5%8C%85%E5%AD%97%E8%8A%82%E7%A0%81%E5%8A%A0%E5%AF%86%E6%8A%80%E6%9C%AF%E5%88%9D%E6%8E%A2/"><i class="fa fa-chevron-left">  </i><span></span></a></div><div class="next-post pull-right"><a href="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8BJava%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/"><span>JVM基础系列之Java类加载机制</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '83850031ee87c27765eb',
+  clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',
+  repo: 'blob-comment',
+  owner: 'hepeng0',
+  admin: 'hepeng0',
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN'
+})
+gitalk.render('gitalk-container')</script></div></div><footer><div class="layout" id="footer"><div class="copyright">&copy;2018 - 2021 By 何鹏 [smile.hepeng@qq.com]</div><div class="framework-info"><span>Driven - </span><a target="_blank" rel="noopener" href="http://hexo.io"><span>Hexo</span></a><span class="footer-separator">|</span><span>Theme - </span><a target="_blank" rel="noopener" href="https://github.com/Molunerfinn/hexo-theme-melody"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.9.0"></script><script src="/js/fancybox.js?version=1.9.0"></script><script src="/js/sidebar.js?version=1.9.0"></script><script src="/js/copy.js?version=1.9.0"></script><script src="/js/fireworks.js?version=1.9.0"></script><script src="/js/transition.js?version=1.9.0"></script><script src="/js/scroll.js?version=1.9.0"></script><script src="/js/head.js?version=1.9.0"></script><script src="/js/search/local-search.js"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+  $('#top-container').addClass('is-mobile')
+}</script><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">Local search</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts"></div></div></div><hr><div id="local-search-results"><div id="local-hits"></div><div id="local-stats"><div class="local-search-stats__hr" id="hr"><span>Powered by</span> <a target="_blank" rel="noopener" href="https://github.com/wzpan/hexo-generator-search" style="color:#49B1F5;">hexo-generator-search</a></div></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div></body></html>

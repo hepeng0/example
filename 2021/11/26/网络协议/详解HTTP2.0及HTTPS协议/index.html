@@ -1,0 +1,117 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="详解HTTP2.0及HTTPS协议"><meta name="keywords" content="网络协议"><meta name="author" content="何鹏 [smile.hepeng@qq.com]"><meta name="copyright" content="何鹏 [smile.hepeng@qq.com]"><title>详解HTTP2.0及HTTPS协议 | 沉默者</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.9.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.9.0"><meta name="format-detection" content="telephone=no"><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  hexoVersion: '5.4.0'
+} </script><link rel="alternate" href="/atom.xml" title="沉默者" type="application/atom+xml">
+</head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="true"><div class="toggle-sidebar-info text-center"><span data-toggle="Toggle article">Toggle site</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">Catalog</div><div class="sidebar-toc__progress"><span class="progress-notice">You've read</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%95%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">引言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#HTTP1-1-VS-HTTP2"><span class="toc-number">2.</span> <span class="toc-text">HTTP1.1 VS HTTP2</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#HTTP2-0%E7%89%B9%E6%80%A7"><span class="toc-number">2.1.</span> <span class="toc-text">HTTP2.0特性</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%88%86%E5%B8%A7"><span class="toc-number">2.1.1.</span> <span class="toc-text">二进制分帧</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%A4%9A%E8%B7%AF%E5%A4%8D%E7%94%A8"><span class="toc-number">2.1.2.</span> <span class="toc-text">多路复用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8E%A8%E9%80%81"><span class="toc-number">2.1.3.</span> <span class="toc-text">服务器推送</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%A4%B4%E9%83%A8%E5%8E%8B%E7%BC%A9"><span class="toc-number">2.1.4.</span> <span class="toc-text">头部压缩</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ALPN-%E5%BA%94%E7%94%A8%E5%8D%8F%E8%AE%AE%E5%8D%8F%E5%95%86"><span class="toc-number">2.2.</span> <span class="toc-text">ALPN 应用协议协商</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SSL-TLS%E6%A8%A1%E5%9E%8B"><span class="toc-number">3.</span> <span class="toc-text">SSL&#x2F;TLS模型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#TLS%E7%89%88%E6%9C%AC"><span class="toc-number">3.1.</span> <span class="toc-text">TLS版本</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%A0%E5%AF%86%E5%A5%97%E4%BB%B6"><span class="toc-number">3.2.</span> <span class="toc-text">加密套件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#HTTPS%E6%8F%A1%E6%89%8B%E8%BF%87%E7%A8%8B"><span class="toc-number">3.3.</span> <span class="toc-text">HTTPS握手过程</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#HTTPS%E6%8F%A1%E6%89%8B%E8%BF%87%E7%A8%8B%E6%8A%93%E5%8C%85%EF%BC%9A"><span class="toc-number">3.3.1.</span> <span class="toc-text">HTTPS握手过程抓包：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#HSTS"><span class="toc-number">3.4.</span> <span class="toc-text">HSTS</span></a></li></ol></li></ol></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="https://img2.baidu.com/it/u=928705063,3876627980&amp;fm=26&amp;fmt=auto&amp;gp=0.jpg"></div><div class="author-info__name text-center">何鹏 [smile.hepeng@qq.com]</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">40</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">31</span></a><a class="author-info-articles__categories article-meta" href="/categories"><span class="pull-left">Categories</span><span class="pull-right">7</span></a></div></div></div><div id="content-outer"><div class="plain" id="top-container"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">沉默者</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span><span class="pull-right"><a class="site-page social-icon search"><i class="fa fa-search"></i><span> Search</span></a></span></div></div><div class="layout" id="content-inner"><article id="post"><div class="plain" id="post-title">详解HTTP2.0及HTTPS协议</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2021-11-26</time><span class="post-meta__separator">|</span><i class="fa fa-inbox" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/JAVA%E5%BC%80%E5%8F%91/"> JAVA开发</a><span class="post-meta__separator">|</span><span class="post-meta-wordcount"><span>Word count: </span><span class="word-count">2.7k</span><span class="post-meta__separator">|</span><span>Reading time: 8 min</span></span></div><div class="article-container" id="post-content"><p>说明： 转自<a target="_blank" rel="noopener" href="https://juejin.cn/post/7034668672262242318">详解 HTTP2.0 及 HTTPS 协议</a></p>
+<h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>本文基于运维视角在阐述解析HTTP2.0协议相比较HTTP1.1的优点的同时讲述HTTPS协议的原理，并结合实际业务场景作为案例，目的是可以通过本文掌握HTTP2.0及HTTPS协议，了解原理，具备定位排查问题，调优的能力。</p>
+<h2 id="HTTP1-1-VS-HTTP2"><a href="#HTTP1-1-VS-HTTP2" class="headerlink" title="HTTP1.1 VS HTTP2"></a>HTTP1.1 VS HTTP2</h2><p>严格意义上HTTP2.0和HTTPS并没有什么必然的联系，只是搭配使用更香一些，HTTP2 是1999年HTTP1.1之后的第一次更新。</p>
+<p>HTTP2具有更好的效率和资源利用率，尤其适用于页面比较重，有大量资源加载的场景（公司的业务属于典型的场景），根据网络上的测试数据，在大量图片、资源需要加载的场景下，HTTP2解决HTTP1.1的线头阻塞（一次请求交互必须等待前一次请求交互的完成）问题相比HTTP1.1可以达到5倍以上的速度提升，目前，淘宝，天猫，京东等平台都已启用HTTP2，如果是<strong>页面存在大量惊天资源需要加载</strong>的情况，启用HTTP2.0，绝对物超所值。</p>
+<h3 id="HTTP2-0特性"><a href="#HTTP2-0特性" class="headerlink" title="HTTP2.0特性"></a>HTTP2.0特性</h3><h4 id="二进制分帧"><a href="#二进制分帧" class="headerlink" title="二进制分帧"></a>二进制分帧</h4><ul>
+<li>HTTP/2 采用二进制格式传输数据，而非 HTTP 1.x 的文本格式，二进制协议解析起来更高效。</li>
+<li>HTTP/1 的请求和响应报文，都是由起始行，首部和实体正文（可选）组成，各部分之间以文本换行符分隔。 HTTP/2 将请求和响应数据分割为更小的帧，并且它们采用二进制编码。</li>
+<li>HTTP1.1 的纯文本形式看起来一目了然，非常直观，但这只是对人的体验而言，事实上这种方式存在多义性，例如大小写、空白字符、回车换行、多字少字等，程序在处理的时候需要复杂的处理。</li>
+<li>而二进制的方式，只是0和1，可以严格规定字段大小，顺序，标志位等，不存在歧义，提交小，同时也提升了数据在网络中传输的效率。</li>
+</ul>
+<h4 id="多路复用"><a href="#多路复用" class="headerlink" title="多路复用"></a>多路复用</h4><ul>
+<li>HTTP1.1中一次请求与响应的交互必须要等待前面的请求交互完成，否则后面的只能等待。</li>
+<li>而在HTTP2.0中，一次链接成功后，只要链接还没断开，那么 client 端就可以在一个链接中并发的发起多个请求，且每个请求的响应不需要等待其他请求。<ul>
+<li>多路复用，代替原来的序列和阻塞机制。所有就是请求的都是通过一个 TCP连接并发完成。 HTTP 1.x 中，如果想并发多个请求，必须使用多个 TCP 链接，且浏览器为了控制资源，还会对单个域名有 6-8个的TCP链接请求限制。常见的一个情况是，如果一个页面需要加载的静态资源过多，因为只有6-8个并发，所以客户端浏览器的等待时间就会比较久。</li>
+</ul>
+</li>
+</ul>
+<h4 id="服务器推送"><a href="#服务器推送" class="headerlink" title="服务器推送"></a>服务器推送</h4><ul>
+<li><p>HTTP2中服务端可以在发送页面HTML时主动推送其它资源，而不用等到浏览器解析到相应位置，发起请求再响应。例如服务端可以主动把JS和CSS文件推送给客户端，而不需要客户端解析HTML时再发送这些请求。</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">当然，如果一次性推送了太多的资源，因为浏览器需要处理所有推送过来的资源。反而会拖累性能。所以需要根据业务场景做权衡。</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="头部压缩"><a href="#头部压缩" class="headerlink" title="头部压缩"></a>头部压缩</h4><ul>
+<li><p>HTTP 1.1请求的大小变得越来越大，有时甚至会大于TCP窗口的初始大小，因为它们需要等待带着ACK的响应回来以后才能继续被发送。HTTP/2对消息头采用HPACK（专为http/2头部设计的压缩格式）进行压缩传输，能够节省消息头占用的网络的流量。而HTTP/1.x每次请求，都会携带大量冗余头信息，浪费了很多带宽资源。像cookie这些信息，每个请求都会附带，产生了很多不必要的资源消耗。为了减少这块的资源消耗并提升性能， HTTP/2对这些首部采取了压缩策略：</p>
+<ul>
+<li>HTTP/2在客户端和服务器端使用“首部表”来跟踪和存储之前发送的键－值对，对于相同的数据，不再通过每次请求和响应发送；</li>
+<li>首部表在HTTP/2的连接存续期内始终存在，由客户端和服务器共同渐进地更新;</li>
+<li>每个新的首部键－值对要么被追加到当前表的末尾，要么替换表中之前的值。</li>
+</ul>
+</li>
+</ul>
+<h3 id="ALPN-应用协议协商"><a href="#ALPN-应用协议协商" class="headerlink" title="ALPN 应用协议协商"></a>ALPN 应用协议协商</h3><p>HTTPS 握手的时候，客户端会首先告诉服务端自己支持的协议，由服务端选择客户端服务端都支持的协议。如果服务端Nginx开启了HTTP2支持，服务端会选择HTTP2协议，否则，服务端就会选择HTTP1.1协议来通讯。</p>
+<h2 id="SSL-TLS模型"><a href="#SSL-TLS模型" class="headerlink" title="SSL/TLS模型"></a>SSL/TLS模型</h2><h3 id="TLS版本"><a href="#TLS版本" class="headerlink" title="TLS版本"></a>TLS版本</h3><p><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img.png"></p>
+<p>历史版本的TLS/SSL因为安全漏洞和性能问题已经慢慢成为历史的尘埃，目前应用最为广泛的是TLS1.2版本，而TLS 1.3 是对于TLS1.2的升级，提供更强大的安全性和更高的性能。</p>
+<h3 id="加密套件"><a href="#加密套件" class="headerlink" title="加密套件"></a>加密套件</h3><p><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img1.png"></p>
+<p>加密套件：TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA</p>
+<p>解释:</p>
+<ul>
+<li>基于TLS协议，使用ECDHE和RSA作为秘钥交换算法，加密算法是AES GCM，秘钥长度128位，哈希算法使用sha256</li>
+<li>AES-GCM 是目前常用的分组加密算法，但是其有一个缺点就是计算量大，导致性能和电量开销比较大。为了解决这个问题，Intel 推出了名为 AES NI（Advanced Encryption Standard new instructions）的 x86 指令拓展集，从硬件上提供对 AES 的支持。对于支持 AES NI 指令的主机来说，使用 AES-GCM 是最佳选择。AES-GCM的优点在于可以利用多核提高加解密性能。</li>
+</ul>
+<h3 id="HTTPS握手过程"><a href="#HTTPS握手过程" class="headerlink" title="HTTPS握手过程"></a>HTTPS握手过程</h3><p><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img2.png"></p>
+<ul>
+<li><p><strong>Client-hello 阶段</strong></p>
+<p>Client-hello 是TCP链接建立后客户端发送的第一条消息，主要目的是把客户端支持的功能和选项告诉服务端。</p>
+<ul>
+<li>浏览器中完成地址输入后, 解析域名获得 IP Host 地址, 浏览器会与此 Host 的443(默认, 如果指定其他端口则会连接此端口) 三次握手建立TCP连接，然后进入TLS 握手协议的 Client-hello。这一步骤中浏览器会将客户端支持的加密套件，目标Host等信息发送给服务器, 并会附上一份随机生成的 session ticket1.</li>
+<li>ALPN协商: 应用层可以协商在安全连接层之上使用什么协议, 避免了额外的往返通讯。<br><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img_1.png"></li>
+</ul>
+</li>
+<li><p><strong>Server-hello阶段</strong></p>
+<ul>
+<li>服务器收到浏览器发送来的 TLS 握手请求后, 存储浏览器发送的session ticket1, 然后根据发送来的 host 寻找对应的服务器证书, 然后会将服务器证书, 服务器从Client Hello提供的客户端支持的加密套件清单中按照优先级选择一个双方都支持的套件（如果服务端支持的套件和client支持的套件交集为空则握手失败）, 和一份随机生成的 session ticket2 返回给浏览器.</li>
+</ul>
+<img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img_2.png" class></li>
+</ul>
+<p><strong>Client-hello和server-hello的步骤很像是买东西： 客户端： 我有多少钱，能支付宝也能微信付款， 服务端：需要xxx RMB，我们使用支付宝吧。</strong></p>
+<ul>
+<li><p>Cipher-spec 阶段</p>
+<p>经过Client Hello和Server Hello 客户端和服务端完成了加密套件的协商。进入Cipher-spec 阶段会核验证书的有效性。</p>
+<p>验证步骤如下:</p>
+<ul>
+<li>验证证书有效期</li>
+<li>验证证书域名与实际的host是否匹配。</li>
+<li>验证证书吊销状态(CRL+OCSP)确认证书是否被吊销。</li>
+<li>验证证书颁发机构, 如果颁发机构是中间证书（基本都是）, 再验证中间证书的有效期/颁发机构/吊销状态. 一直验证到最后一层证书, 中途任何一个环节不通过都会提示不信任。</li>
+<li>若检查通过, 随机生成一份 session ticket 3 (这是浏览器生成的第二份 ticket), 通过返回证书中的公钥, 用协商的加密算法加密, 返回给服务器.同时浏览器用 session ticket 1(浏览器) &amp; session ticket 2(服务器) &amp; session ticket 3(浏浏览器) 组合成 session key。</li>
+</ul>
+</li>
+<li><p>内容传输阶段</p>
+<ul>
+<li>TLS 连接建立完成, 在连接销毁前, 浏览器与服务器的交互数据均通过 session key 来进行对称加密.</li>
+</ul>
+</li>
+</ul>
+<h4 id="HTTPS握手过程抓包："><a href="#HTTPS握手过程抓包：" class="headerlink" title="HTTPS握手过程抓包："></a>HTTPS握手过程抓包：</h4><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img_3.png" class>
+
+<ul>
+<li>前三行为TCP三次握手，</li>
+<li>第四行客户端发起Client hello，</li>
+<li>第五行服务端ack回复， </li>
+<li>第六行Server Hello，</li>
+<li>第9行Cipher-spec阶段进行证书校验，</li>
+<li>完成握手之后第13行进入数据交互阶段。</li>
+</ul>
+<h3 id="HSTS"><a href="#HSTS" class="headerlink" title="HSTS"></a>HSTS</h3><p>通常访问网址的时候我们大多不会刻意的在前面写上https，也很少会关注我们是通过HTTP协议还是HTTPS协议在浏览。而要求https访问的站点，在用户通过http访问的时候大多以重定向的方式重定向到HTTPS地址，而如果我劫持了用户流量，拦截向https的重定向请求，然后担当一个代理的角色，如实转发客户端请求并返回，但是客户端跟中间人的交互采用的是明文的HTTP协议，由于没有建立SSL连接，所以客户端提交的信息都会暴露。基于此问题，是国际互联网工程组织 IETF 发布了HSTS的安全策略机制，强制让浏览器使用HTTPS与站点进行通信。</p>
+<p>HSTS（HTTP Strict Transport Security）的作用是强制客户端（如浏览器）使用HTTPS与服务器创建连接。HSTS主要是通过服务器发送响应头的方式来控制浏览器操作：</p>
+<ul>
+<li><p>当客户端通过 HTTPS 发出请求时，服务器会在返回的 HTTP 响应头中包含 Strict-Transport-Security 字段（HSTS的开关由服务端控制）。</p>
+</li>
+<li><p>浏览器接收到这样的信息之后，在一定期限内对该网站的任何请求都会以 HTTPS 发起（浏览器内部307跳转），而不会以 HTTP发起再由服务器重定向到 HTTPS。</p>
+</li>
+</ul>
+</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/">网络协议</a></div><nav id="pagination"><div class="next-post pull-right"><a href="/2021/11/26/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/%E5%9F%BA%E4%BA%8EJVMTI%E6%8A%80%E6%9C%AF%E7%9A%84Jar%E5%8C%85%E5%AD%97%E8%8A%82%E7%A0%81%E5%8A%A0%E5%AF%86%E6%8A%80%E6%9C%AF%E5%88%9D%E6%8E%A2/"><span></span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '83850031ee87c27765eb',
+  clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',
+  repo: 'blob-comment',
+  owner: 'hepeng0',
+  admin: 'hepeng0',
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN'
+})
+gitalk.render('gitalk-container')</script></div></div><footer><div class="layout" id="footer"><div class="copyright">&copy;2018 - 2021 By 何鹏 [smile.hepeng@qq.com]</div><div class="framework-info"><span>Driven - </span><a target="_blank" rel="noopener" href="http://hexo.io"><span>Hexo</span></a><span class="footer-separator">|</span><span>Theme - </span><a target="_blank" rel="noopener" href="https://github.com/Molunerfinn/hexo-theme-melody"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.9.0"></script><script src="/js/fancybox.js?version=1.9.0"></script><script src="/js/sidebar.js?version=1.9.0"></script><script src="/js/copy.js?version=1.9.0"></script><script src="/js/fireworks.js?version=1.9.0"></script><script src="/js/transition.js?version=1.9.0"></script><script src="/js/scroll.js?version=1.9.0"></script><script src="/js/head.js?version=1.9.0"></script><script src="/js/search/local-search.js"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+  $('#top-container').addClass('is-mobile')
+}</script><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">Local search</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts"></div></div></div><hr><div id="local-search-results"><div id="local-hits"></div><div id="local-stats"><div class="local-search-stats__hr" id="hr"><span>Powered by</span> <a target="_blank" rel="noopener" href="https://github.com/wzpan/hexo-generator-search" style="color:#49B1F5;">hexo-generator-search</a></div></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div></body></html>
