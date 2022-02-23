@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2021-11-26T08:52:53.273Z</updated>
+  <updated>2022-02-23T04:21:57.866Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -15,6 +15,86 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>数据库MySQL系列之MVCC浅探</title>
+    <link href="http://example.com/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8BInnoDB%E4%B8%ADMVCC%E6%B5%85%E6%8E%A2/"/>
+    <id>http://example.com/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8BInnoDB%E4%B8%ADMVCC%E6%B5%85%E6%8E%A2/</id>
+    <published>2022-02-23T03:08:57.000Z</published>
+    <updated>2022-02-23T04:21:57.866Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="MVCC简介"><a href="#MVCC简介" class="headerlink" title="MVCC简介"></a>MVCC简介</h1><h2 id="MVCC名词解释"><a href="#MVCC名词解释" class="headerlink" title="MVCC名词解释"></a>MVCC名词解释</h2><p>MVCC (Multiversion Concurrency Control)，即多版本并发控制技术。</p><h2 id="MVCC解决了什么问题"><a href="#MVCC解决了什么问题" class="headerlink" title="MVCC解决了什么问题"></a>MVCC解决了什么问题</h2><p>它使得大部分支持行锁的事务引擎（InnoDB,Falcon以及PBXT等），不再单纯的使用行锁来进行数据库的并发控制，取而代之的是把数据库的行锁与行的多个版本结合起来。<br>只需要很小的开销，就可以实现非锁定读，从而大大提高数据库系统的并发性能。</p><h2 id="锁分类"><a href="#锁分类" class="headerlink" title="锁分类"></a>锁分类</h2><ul><li><strong>读锁</strong>：也叫共享锁、S锁，若事务T对数据对象A加上S锁，则事务T可以读A但不能修改A，其他事务只能再对A加S锁，而不能加X锁，直到T释放A上的S 锁。这保证了其他事务可以读A，但在T释放A上的S锁之前不能对A做任何修改。</li><li><strong>写锁</strong>：又称排他锁、X锁。若事务T对数据对象A加上X锁，事务T可以读A也可以修改A，其他事务不能再对A加任何锁，直到T释放A上的锁。这保证了其他事务在T释放A上的锁之前不能再读取和修改A。</li><li><strong>表锁</strong>：操作对象是数据表。Mysql大多数锁策略都支持(常见mysql innodb)，是系统开销最低但并发性最低的一个锁策略。事务t对整个表加读锁，则其他事务可读不可写，若加写锁，则其他事务增删改都不行。</li><li><strong>行级锁</strong>：操作对象是数据表中的一行。是MVCC技术用的比较多的，但在MYISAM用不了，行级锁用mysql的储存引擎实现而不是mysql服务器。但行级锁对系统开销较大，处理高并发较好。</li></ul><h1 id="MVCC实现原理"><a href="#MVCC实现原理" class="headerlink" title="MVCC实现原理"></a>MVCC实现原理</h1><p>MVCC是通过保存数据在某个时间点的快照来实现的。不同存储引擎的MVCC实现是不同的，典型的有乐观并发控制和悲观并发控制。</p><h2 id="InnoDB-MVCC具体实现分析"><a href="#InnoDB-MVCC具体实现分析" class="headerlink" title="InnoDB MVCC具体实现分析"></a>InnoDB MVCC具体实现分析</h2><p>innodb MVCC主要是为<strong>Repeatable-Read事务隔离级别</strong>做的。在此隔离级别下，A、B客户端所示的数据相互隔离，互相更新不可见。</p><p>innodb存储的最基本row中包含一些额外的存储信息： DATA_TRX_ID，DATA_ROLL_PTR，DB_ROW_ID，DELETE BIT。</p><ul><li>6字节的DATA_TRX_ID 标记了最新更新这条行记录的transaction id，每处理一个事务，其值自动+1；</li><li>7字节的DATA_ROLL_PTR 指向当前记录项的rollback segment的undo log记录，找之前版本的数据就是通过这个指针；</li><li>6字节的DB_ROW_ID，当由innodb自动产生聚集索引时，聚集索引包括这个DB_ROW_ID的值，否则聚集索引中不包括这个值，这个用于索引当中；</li><li>DELETE BIT位用于标识该记录是否被删除，这里的不是真正的删除数据，而是标志出来的删除，真正意义的删除是在commit的时候。</li></ul><p><img src="/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8BInnoDB%E4%B8%ADMVCC%E6%B5%85%E6%8E%A2/img.png" alt="img.png"></p><p>具体的执行过程</p><p>begin-&gt;用排他锁锁定该行-&gt;记录redo log-&gt;记录undo log-&gt;修改当前行的值，写事务编号，回滚指针指向undo log中的修改前的行</p><p>该过程准确说是UPDATE的事务过程，其实undo log分insert和update undo log，因为insert时，原始的数据并不存在，所以回滚时把insert undo log丢弃即可，而update undo log则必须遵守上述过程。</p><h3 id="SELECT"><a href="#SELECT" class="headerlink" title="SELECT"></a>SELECT</h3><p>Innodb检查每行数据，确保他们符合两个标准：</p><ol><li><p>InnoDB只查找版本早于当前事务版本的数据行(也就是数据行的版本必须小于或等于当前事务的版本)，这确保当前事务读取的行要么是事务之前已经存在的，要么是由当前事务创建或修改的；</p></li><li><p>行的删除版本要么未定义,要么大于当前事务版本号,这可以确保事务读取到的行，在事务开始之前未被删除。</p></li></ol><p>只有a,b同时满足的记录，才能返回作为查询结果。</p><h3 id="INSERT"><a href="#INSERT" class="headerlink" title="INSERT"></a>INSERT</h3><p>InnoDB为新插入的每一行保存当前事务版本号作为版本号。</p><h3 id="DELETE"><a href="#DELETE" class="headerlink" title="DELETE"></a>DELETE</h3><p>InnoDB会为删除的每一行保存当前事务的版本号(事务的ID)作为删除标识。</p><h3 id="UPDATE"><a href="#UPDATE" class="headerlink" title="UPDATE"></a>UPDATE</h3><p>InnoDB执行UPDATE，实际上是新插入了一行记录，并保存其创建时间为当前事务的ID，同时保存当前事务ID到要UPDATE的行的删除时间。</p><h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><p>insert操作时 “创建时间”=DB_ROW_ID，这时，“删除时间 ”是未定义的；</p><p>update时，复制新增行的“创建时间”=DB_ROW_ID，删除时间未定义，旧数据行“创建时间”不变，删除时间=该事务的DB_ROW_ID；</p><p>delete操作，相应数据行的“创建时间”不变，删除时间=该事务的DB_ROW_ID；</p><p>select操作对两者都不修改，只读相应的数据</p><h1 id="对于MVCC的总结"><a href="#对于MVCC的总结" class="headerlink" title="对于MVCC的总结"></a>对于MVCC的总结</h1><p>上述更新前建立undo log，根据各种策略读取时非阻塞就是MVCC，undo log中的行就是MVCC中的多版本。</p><p>这个可能与我们所理解的MVCC有较大的出入，一般我们认为MVCC有下面几个特点：</p><ul><li>每行数据都存在一个版本，每次数据更新时都更新该版本</li><li>修改时Copy出当前版本随意修改，各个事务之间无干扰 </li><li>保存时比较版本号，如果成功（commit），则覆盖原记录；失败则放弃copy（rollback）</li></ul><p>就是每行都有版本号，保存时根据版本号决定是否成功，听起来含有乐观锁的味道。</p><p>而Innodb的实现方式是：</p><ul><li>事务以排他锁的形式修改原始数据</li><li>把修改前的数据存放于undo log，通过回滚指针与主数据关联</li><li>修改成功（commit）啥都不做，失败则恢复undo log中的数据（rollback）</li></ul><p>二者最本质的区别是，当修改数据时是否要排他锁定，如果锁定了还算不算是MVCC？ </p><p>Innodb的实现真算不上MVCC，因为并没有实现核心的多版本共存，undo log中的内容只是串行化的结果，记录了多个事务的过程，不属于多版本共存。</p><p>但理想的MVCC是难以实现的，当事务仅修改一行记录使用理想的MVCC模式是没有问题的，可以通过比较版本号进行回滚；但当事务影响到多行数据时，理想的MVCC据无能为力了。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">比如，如果Transaciton1执行理想的MVCC，修改Row1成功，而修改Row2失败，此时需要回滚Row1，但因为Row1没有被锁定，其数据可能又被Transaction2所修改，如果此时回滚Row1的内容，则会破坏Transaction2的修改结果，导致Transaction2违反ACID。</span><br></pre></td></tr></table></figure><p>理想MVCC难以实现的根本原因在于企图通过乐观锁代替二段提交。</p><p>修改两行数据，但为了保证其一致性，与修改两个分布式系统中的数据并无区别，而二提交是目前这种场景保证一致性的唯一手段。</p><p>二段提交的本质是锁定，乐观锁的本质是消除锁定，二者矛盾，故理想的MVCC难以真正在实际中被应用，Innodb只是借了MVCC这个名字，提供了读的非阻塞而已。</p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;h1 id=&quot;MVCC简介&quot;&gt;&lt;a href=&quot;#MVCC简介&quot; class=&quot;headerlink&quot; title=&quot;MVCC简介&quot;&gt;&lt;/a&gt;MVCC简介&lt;/h1&gt;&lt;h2 id=&quot;MVCC名词解释&quot;&gt;&lt;a href=&quot;#MVCC名词解释&quot; class=&quot;headerlink&quot; </summary>
+      
+    
+    
+    
+    <category term="数据库" scheme="http://example.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+    
+    <category term="MySQL" scheme="http://example.com/tags/MySQL/"/>
+    
+    <category term="数据库" scheme="http://example.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+    <category term="MVCC" scheme="http://example.com/tags/MVCC/"/>
+    
+    <category term="InnoDB" scheme="http://example.com/tags/InnoDB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>增量数据同步之Debezium技术研究</title>
+    <link href="http://example.com/2021/12/08/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5%E6%8A%80%E6%9C%AF/%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5%E4%B9%8BDebezium%E6%8A%80%E6%9C%AF%E7%A0%94%E7%A9%B6/"/>
+    <id>http://example.com/2021/12/08/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5%E6%8A%80%E6%9C%AF/%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5%E4%B9%8BDebezium%E6%8A%80%E6%9C%AF%E7%A0%94%E7%A9%B6/</id>
+    <published>2021-12-08T02:12:37.000Z</published>
+    <updated>2021-12-09T03:22:18.347Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="常见关系型数据库数据同步思路"><a href="#常见关系型数据库数据同步思路" class="headerlink" title="常见关系型数据库数据同步思路"></a>常见关系型数据库数据同步思路</h2><h3 id="全量同步"><a href="#全量同步" class="headerlink" title="全量同步"></a>全量同步</h3><h4 id="JDBC-Batch"><a href="#JDBC-Batch" class="headerlink" title="JDBC-Batch"></a>JDBC-Batch</h4><p>分页查询源端的表，然后通过 jdbc的batch 方式插入到目标表</p><p>需要注意的是，分页查询时，一定要按照主键id来排序分页，避免重复插入。</p><h4 id="数据文件导出导入"><a href="#数据文件导出导入" class="headerlink" title="数据文件导出导入"></a>数据文件导出导入</h4><p>一般只适用于同种数据库之间的同步，如果是不同的数据库，这种方式可能会存在问题。</p><h3 id="增量同步"><a href="#增量同步" class="headerlink" title="增量同步"></a>增量同步</h3>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;h2 id=&quot;常见关系型数据库数据同步思路&quot;&gt;&lt;a href=&quot;#常见关系型数据库数据同步思路&quot; class=&quot;headerlink&quot; title=&quot;常见关系型数据库数据同步思路&quot;&gt;&lt;/a&gt;常见关系型数据库数据同步思路&lt;/h2&gt;&lt;h3 id=&quot;全量同步&quot;&gt;&lt;a href=&quot;#全</summary>
+      
+    
+    
+    
+    <category term="实用工具" scheme="http://example.com/categories/%E5%AE%9E%E7%94%A8%E5%B7%A5%E5%85%B7/"/>
+    
+    
+    <category term="数据同步" scheme="http://example.com/tags/%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>MQ详解及四大常用MQ对比</title>
+    <link href="http://example.com/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/"/>
+    <id>http://example.com/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/</id>
+    <published>2021-12-01T05:14:56.000Z</published>
+    <updated>2021-12-01T05:14:44.593Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="消息队列概述"><a href="#消息队列概述" class="headerlink" title="消息队列概述"></a>消息队列概述</h2><h3 id="消息队列使用场景及其优缺点"><a href="#消息队列使用场景及其优缺点" class="headerlink" title="消息队列使用场景及其优缺点"></a>消息队列使用场景及其优缺点</h3><ul><li><p>消息队列使用场景</p><ul><li>异步通信<ul><li>紧急重要（需要立刻响应）的业务放到该调用方法中，响应要求不高的使用消息队列，放到MQ队列中，供消费者处理。</li><li>提高系统响应时长</li></ul></li><li>削峰<ul><li>过载保护和缓冲</li></ul></li><li>解耦<ul><li>降低工程间的强依赖程度，针对异构系统进行适配。</li></ul></li><li>冗余<ul><li>消息队列把数据进行持久化直到它们已经被完全处理，通过这一方式规避了数据丢失风险。</li><li>许多消息队列所采用的”插入-获取-删除”范式中，在把一个消息从队列中删除之前，需要你的处理系统明确的指出该消息已经被处理完毕，从而确保你的数据被安全的保存直到你使用完毕。</li></ul></li><li>保证执行顺序</li><li>数据流处理<ul><li>ELK</li></ul></li></ul></li><li><p>消息队列优点</p><ul><li>低耦合</li><li>可靠投递</li><li>广播</li><li>流量控制</li><li>最终一致性</li><li>实时处理框架支撑等</li></ul></li><li><p>消息队列的问题</p><ul><li>系统可用性降低<ul><li>如何保证消息队列可用性？</li></ul></li><li>系统复杂度提高<ul><li>消息队列语义</li><li>如何保证没有重复消费</li><li>如何保证没有消息丢失</li><li>如何保证消息顺序</li></ul></li><li>一致性问题<ul><li>部分消费成功部分消费失败？</li></ul></li></ul></li></ul><h3 id="消息中间件组成"><a href="#消息中间件组成" class="headerlink" title="消息中间件组成"></a>消息中间件组成</h3><h4 id="Broker"><a href="#Broker" class="headerlink" title="Broker"></a>Broker</h4><p>消息服务器，作为server提供消息核心服务</p><h4 id="Producer"><a href="#Producer" class="headerlink" title="Producer"></a>Producer</h4><p>消息生产者，业务的发起方，负责生产消息传输给broker，</p><h4 id="Topic"><a href="#Topic" class="headerlink" title="Topic"></a>Topic</h4><p>主题，发布订阅模式下的消息统一汇集地，不同生产者向topic发送消息，由MQ服务器分发到不同的订阅者，实现消息的<strong>广播</strong></p><h4 id="Queue"><a href="#Queue" class="headerlink" title="Queue"></a>Queue</h4><p>队列，PTP模式下，特定生产者向特定queue发送消息，消费者订阅特定的queue完成指定消息的接收</p><h4 id="Topic-VS-Queue"><a href="#Topic-VS-Queue" class="headerlink" title="Topic VS Queue"></a>Topic VS Queue</h4><ul><li><p><strong>Queue</strong>: 实现了负载均衡，将producer生产的消息发送到消息队列中，由多个消费者消费。但一个消息只能被一个消费者接受，当没有消费者可用时，这个消息会被保存直到有一个可用的消费者。</p></li><li><p><strong>Topic</strong>: 实现了发布和订阅，当你发布一个消息，所有订阅这个topic的服务都能得到这个消息，所以从1到N个订阅者都能得到一个消息的拷贝。</p></li></ul><h4 id="Message"><a href="#Message" class="headerlink" title="Message"></a>Message</h4><p>消息体，根据不同通信协议定义的固定格式进行编码的数据包，来封装业务数据，实现消息的传输</p><h3 id="消息中间件模式"><a href="#消息中间件模式" class="headerlink" title="消息中间件模式"></a>消息中间件模式</h3><h4 id="点对点（PTP）"><a href="#点对点（PTP）" class="headerlink" title="点对点（PTP）"></a>点对点（PTP）</h4><p>PTP点对点： <strong>使用Queue作为通信载体</strong></p><p><img src="/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011037.png"></p><p>说明：</p><ul><li>消息生产者生产消息发送到queue中，然后消息消费者从queue中取出并且消费消息。</li><li>消息被消费以后，queue中不再存储，所以消息消费者不可能消费到已经被消费的消息。 Queue支持存在多个消费者，<strong>但是对一个消息而言，只会有一个消费者可以消费</strong>。</li></ul><h4 id="发布-订阅-PUB-SUB"><a href="#发布-订阅-PUB-SUB" class="headerlink" title="发布/订阅(PUB/SUB)"></a>发布/订阅(PUB/SUB)</h4><p>Pub/Sub发布订阅（广播）：<strong>使用topic作为通信载体</strong></p><p><img src="/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011041.png"></p><p>说明：</p><ul><li>消息生产者（发布）将消息发布到topic中，同时有多个消息消费者（订阅）消费该消息。和点对点方式不同，<strong>发布到topic的消息会被所有订阅者消费</strong>。</li></ul><h3 id="消息中间件常用协议"><a href="#消息中间件常用协议" class="headerlink" title="消息中间件常用协议"></a>消息中间件常用协议</h3><h4 id="AMQP-Advanced-Message-Queuing-Protocol-协议"><a href="#AMQP-Advanced-Message-Queuing-Protocol-协议" class="headerlink" title="AMQP(Advanced Message Queuing Protocol)协议"></a>AMQP(Advanced Message Queuing Protocol)协议</h4><p>一个提供统一消息服务的应用层标准高级消息队列协议,是应用层协议的一个开放标准,为面向消息的中间件设计。</p><p>基于此协议的客户端与消息中间件可传递消息，并不受客户端/中间件不同产品，不同开发语言等条件的限制。</p><p>优点：可靠、通用</p><h4 id="MQTT（Message-Queuing-Telemetry-Transport，消息队列遥测传输）协议"><a href="#MQTT（Message-Queuing-Telemetry-Transport，消息队列遥测传输）协议" class="headerlink" title="MQTT（Message Queuing Telemetry Transport，消息队列遥测传输）协议"></a>MQTT（Message Queuing Telemetry Transport，消息队列遥测传输）协议</h4><p>IBM开发的一个即时通讯协议，有可能成为物联网的重要组成部分。</p><p>该协议支持所有平台，几乎可以把所有联网物品和外部连接起来，被用来当做传感器和致动器（比如通过Twitter让房屋联网）的通信协议。 </p><p>优点：格式简洁、占用带宽小、移动端通信、PUSH、嵌入式系统</p><h4 id="STOMP（Streaming-Text-Orientated-Message-Protocol，流文本定向消息协议）协议"><a href="#STOMP（Streaming-Text-Orientated-Message-Protocol，流文本定向消息协议）协议" class="headerlink" title="STOMP（Streaming Text Orientated Message Protocol，流文本定向消息协议）协议"></a>STOMP（Streaming Text Orientated Message Protocol，流文本定向消息协议）协议</h4><p>是一种为MOM(Message Oriented Middleware，面向消息的中间件)设计的简单文本协议。</p><p>STOMP提供一个可互操作的连接格式，允许客户端与任意STOMP消息代理（Broker）进行交互。</p><p>优点：命令模式（非topic\queue模式）</p><h4 id="XMPP（Extensible-Messaging-and-Presence-Protocol，可扩展消息处理现场协议）协议"><a href="#XMPP（Extensible-Messaging-and-Presence-Protocol，可扩展消息处理现场协议）协议" class="headerlink" title="XMPP（Extensible Messaging and Presence Protocol，可扩展消息处理现场协议）协议"></a>XMPP（Extensible Messaging and Presence Protocol，可扩展消息处理现场协议）协议</h4><p>基于可扩展标记语言（XML）的协议，多用于即时消息（IM）以及在线现场探测。</p><p>适用于服务器之间的准即时操作。</p><p>核心是基于XML流传输，这个协议可能最终允许因特网用户向因特网上的其他任何人发送即时消息，即使其操作系统和浏览器不同。</p><p>优点：通用公开、兼容性强、可扩展、安全性高，但XML编码格式占用带宽大</p><h4 id="其他基于TCP-IP自定义的协议"><a href="#其他基于TCP-IP自定义的协议" class="headerlink" title="其他基于TCP/IP自定义的协议"></a>其他基于TCP/IP自定义的协议</h4><p>有些特殊框架（如：redis、kafka、zeroMq等）根据自身需要未严格遵循MQ规范，而是基于TCP\IP自行封装了一套协议，通过网络socket接口进行传输，实现了MQ的功能。</p><h3 id="常用消息中间件MQ总结"><a href="#常用消息中间件MQ总结" class="headerlink" title="常用消息中间件MQ总结"></a>常用消息中间件MQ总结</h3><h4 id="Kafka"><a href="#Kafka" class="headerlink" title="Kafka"></a>Kafka</h4><p>Apache下的一个子项目，使用scala实现的一个高性能分布式Pub/Sub消息队列系统，具有以下特性：</p><ul><li>快速持久化：通过磁盘顺序读写与零拷贝机制，可以在O(1)的系统开销下进行消息持久化；</li><li>高吞吐：在一台普通的服务器上既可以达到10W/s的吞吐速率；</li><li>高堆积：支持topic下消费者较长时间离线，消息堆积量大；</li><li>完全的分布式系统：Broker、Producer、Consumer都原生自动支持分布式，依赖zookeeper（已移除）自动实现复杂均衡；</li><li>支持Hadoop数据并行加载：对于像Hadoop的一样的日志数据和离线分析系统，但又要求实时处理的限制，这是一个可行的解决方案。</li></ul><h4 id="RocketMQ"><a href="#RocketMQ" class="headerlink" title="RocketMQ"></a>RocketMQ</h4><p>阿里参照kafka设计思想使用java实现的一套mq。同时将阿里系内部多款mq产品（Notify、metaq）进行整合，只维护核心功能，去除了所有其他运行时依赖，保证核心功能最简化，在此基础上配合阿里上述其他开源产品实现不同场景下mq的架构，目前主要多用于订单交易系统。</p><p>具有以下特点：</p><ul><li>能够保证严格的消息顺序</li><li>提供针对消息的过滤功能</li><li>提供丰富的消息拉取模式</li><li>高效的订阅者水平扩展能力</li><li>实时的消息订阅机制</li><li>亿级消息堆积能力</li></ul><h4 id="RabbitMQ"><a href="#RabbitMQ" class="headerlink" title="RabbitMQ"></a>RabbitMQ</h4><p>使用Erlang编写的一个开源的消息队列，本身支持很多的协议：AMQP，XMPP, SMTP,STOMP，也正是如此，使的它变的非常重量级，更适合于企业级的开发。</p><p>同时实现了Broker架构，核心思想是生产者不会将消息直接发送给队列，消息在发送给客户端时先在中心队列排队。</p><p>对路由(Routing)，负载均衡(Load balance)、数据持久化都有很好的支持。</p><p>多用于进行企业级的ESB整合。</p><h4 id="ZeroMQ"><a href="#ZeroMQ" class="headerlink" title="ZeroMQ"></a>ZeroMQ</h4><p>号称最快的消息队列系统，专门为高吞吐量/低延迟的场景开发，在金融界的应用中经常使用，偏重于实时数据通信场景。</p><p>ZMQ能够实现RabbitMQ不擅长的高级/复杂的队列，但是开发人员需要自己组合多种技术框架，开发成本高。</p><p>因此ZeroMQ具有一个独特的非中间件的模式，更像一个socket library，你不需要安装和运行一个消息服务器或中间件，因为你的应用程序本身就是使用ZeroMQ API完成逻辑服务的角色。</p><p>但是ZeroMQ仅提供<strong>非持久性的队列</strong>，如果down机，数据将会丢失。如：Twitter的Storm中使用ZeroMQ作为数据流的传输。</p><p>ZeroMQ套接字是与传输层无关的：ZeroMQ套接字对所有传输层协议定义了统一的API接口。默认支持 进程内(inproc) ，进程间(IPC) ，多播，TCP协议，在不同的协议之间切换只要简单的改变连接字符串的前缀。可以在任何时候以最小的代价从进程间的本地通信切换到分布式下的TCP通信。ZeroMQ在背后处理连接建立，断开和重连逻辑。</p><p>特性：</p><ul><li>无锁的队列模型：对于跨线程间的交互（用户端和session）之间的数据交换通道pipe，采用无锁的队列算法CAS；在pipe的两端注册有异步事件，在读或者写消息到pipe的时，会自动触发读写事件。</li><li>批量处理的算法：对于批量的消息，进行了适应性的优化，可以批量的接收和发送消息。</li><li>多核下的线程绑定，无须CPU切换：区别于传统的多线程并发模式，信号量或者临界区，zeroMQ充分利用多核的优势，每个核绑定运行一个工作者线程，避免多线程之间的CPU切换开销。</li></ul><h4 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h4><p>本身支持MQ功能，所以完全可以当做一个轻量级的队列服务来使用。</p><p>实验表明：</p><ul><li>入队时，当数据比较小时Redis的性能要高于RabbitMQ，而如果数据大小超过了10K，Redis则慢的无法忍受；</li><li>出队时，无论数据大小，Redis都表现出非常好的性能，而RabbitMQ的出队性能则远低于Redis。</li></ul><h3 id="主要消息中间件的比较"><a href="#主要消息中间件的比较" class="headerlink" title="主要消息中间件的比较"></a>主要消息中间件的比较</h3><p><img src="/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011141.png"></p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;h2 id=&quot;消息队列概述&quot;&gt;&lt;a href=&quot;#消息队列概述&quot; class=&quot;headerlink&quot; title=&quot;消息队列概述&quot;&gt;&lt;/a&gt;消息队列概述&lt;/h2&gt;&lt;h3 id=&quot;消息队列使用场景及其优缺点&quot;&gt;&lt;a href=&quot;#消息队列使用场景及其优缺点&quot; class=&quot;he</summary>
+      
+    
+    
+    
+    <category term="中间件" scheme="http://example.com/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
+    
+    
+    <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
+    
+    <category term="MQ" scheme="http://example.com/tags/MQ/"/>
+    
+  </entry>
   
   <entry>
     <title>详解HTTP2.0及HTTPS协议</title>
@@ -38,26 +118,6 @@
     
     
     <category term="网络协议" scheme="http://example.com/tags/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/"/>
-    
-  </entry>
-  
-  <entry>
-    <title></title>
-    <link href="http://example.com/2021/11/26/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/%E5%9F%BA%E4%BA%8EJVMTI%E6%8A%80%E6%9C%AF%E7%9A%84Jar%E5%8C%85%E5%AD%97%E8%8A%82%E7%A0%81%E5%8A%A0%E5%AF%86%E6%8A%80%E6%9C%AF%E5%88%9D%E6%8E%A2/"/>
-    <id>http://example.com/2021/11/26/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/%E5%9F%BA%E4%BA%8EJVMTI%E6%8A%80%E6%9C%AF%E7%9A%84Jar%E5%8C%85%E5%AD%97%E8%8A%82%E7%A0%81%E5%8A%A0%E5%AF%86%E6%8A%80%E6%9C%AF%E5%88%9D%E6%8E%A2/</id>
-    <published>2021-11-26T02:38:48.408Z</published>
-    <updated>2021-11-26T05:42:50.898Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="JVMTI的定义及原理"><a href="#JVMTI的定义及原理" class="headerlink" title="JVMTI的定义及原理"></a>JVMTI的定义及原理</h2><p>在介绍JVMTI之前，需要先了解下Java平台调试体系JPDA（Java PlatformDebugger Architecture）。它是Java虚拟机为调试和监控虚拟机专门提供的一套接口。</p><p>如下图所示，JPDA被抽象为三层实现。其中JVMTI就是JVM对外暴露的接口。 JDI是实现了JDWP通信协议的客户端，调试器通过它和JVM中被调试程序通信。</p><p>JVMTI 本质上是在JVM内部的许多事件进行了埋点。通过这些埋点可以给外部提供当前上下文的一些信息。甚至可以接受外部的命令来改变下一步的动作。外部程序一般利用C/C++实现一个JVMTIAgent，在Agent里面注册一些JVM事件的回调。当事件发生时JVMTI调用这些回调方法。Agent可以在回调方法里面实现自己的逻辑。</p><p>JVMTIAgent是以动态链接库的形式被虚拟机加载的。</p><p><img src="/2021/11/26/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/%E5%9F%BA%E4%BA%8EJVMTI%E6%8A%80%E6%9C%AF%E7%9A%84Jar%E5%8C%85%E5%AD%97%E8%8A%82%E7%A0%81%E5%8A%A0%E5%AF%86%E6%8A%80%E6%9C%AF%E5%88%9D%E6%8E%A2/img.png"></p><h2 id="JVMTI的历史"><a href="#JVMTI的历史" class="headerlink" title="JVMTI的历史"></a>JVMTI的历史</h2><p>JVMTI 的前身是JVMDI（Java Virtual Machine Debug Interface）和 JVMPI（Java Virtual Machine Profiler Interface），它们原来分别被用于提供调试 Java 程序以及 Java 程序调节性能的功能。</p><p>在 J2SE 5.0 之后 JDK 取代了JVMDI 和 JVMPI 这两套接口，JVMDI 在最新的 Java SE 6 中已经不提供支持，而 JVMPI 也计划在 Java SE 7 后被彻底取代。</p><h2 id="JVMTI的功能"><a href="#JVMTI的功能" class="headerlink" title="JVMTI的功能"></a>JVMTI的功能</h2><p>JVMTI处于整个JPDA 体系的最底层，所有调试功能本质上都需要通过 JVMTI 来提供。</p><p>从大的方面来说，JVMTI 提供了可用于 debug 和profiler 的接口；同时，在 Java 5/6 中，虚拟机接口也增加了监听（Monitoring），线程分析（Thread analysis）以及覆盖率分析（Coverage Analysis）等功能。</p><p>从小的方面来说包含了虚拟机中线程、内存、堆、栈、类、方法、变量，事件、定时器处理等等诸多功能。 具体可以参考<a href="https://docs.oracle.com/javase/1.5.0/docs/guide/jvmti/jvmti.html">oracle的文档</a></p><p>通过这些接口，开发人员不仅可以调试在该虚拟机上运行的 Java 程序，还能查看它们运行的状态，设置回调函数，控制某些环境变量，从而优化程序性能。</p><h2 id="基于JVMTI的项目加解密实现"><a href="#基于JVMTI的项目加解密实现" class="headerlink" title="基于JVMTI的项目加解密实现"></a>基于JVMTI的项目加解密实现</h2><p><strong>参考DEMO中jvmti-encrypt模块项目实现</strong></p><h2 id="Agent加载与回调函数的执行分析"><a href="#Agent加载与回调函数的执行分析" class="headerlink" title="Agent加载与回调函数的执行分析"></a>Agent加载与回调函数的执行分析</h2><h3 id="Agent启动"><a href="#Agent启动" class="headerlink" title="Agent启动"></a>Agent启动</h3><p>Agent 是在 Java 虚拟机启动之时加载的，这个加载处于虚拟机初始化的早期。</p><p>在这个时间点上：</p><ul><li>所有的 Java 类都未被初始化；</li><li>所有的对象实例都未被创建；</li><li>因而，没有任何 Java 代码被执行；</li></ul><p>但在这个时候，我们已经可以：</p><ul><li>操作 JVMTI 的 Capability 参数；</li><li>使用系统参数</li></ul><p>动态库被加载之后，虚拟机会先寻找一个 Agent 入口函数：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *vm, char *options, void *reserved)</span><br></pre></td></tr></table></figure><p>在这个函数中，虚拟机传入了一个 JavaVM 指针，以及命令行的参数。</p><p>通过 JavaVM，我们可以获得 JVMTI 的指针，并获得 JVMTI 函数的使用能力，所有的 JVMTI 函数都通过这个 jvmtiEnv 获取，不同的虚拟机实现提供的函数细节可能不一样，但是使用的方式是统一的。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jint ret = vm-&gt;GetEnv((void **)&amp;jvmti, JVMTI_VERSION);</span><br></pre></td></tr></table></figure><p>这里传入的版本信息参数很重要，不同的 JVMTI 环境所提供的功能以及处理方式都可能有所不同，不过它在同一个虚拟机中会保持不变。</p><p>命令行参数事实上就是上面启动命令行中的 options 部分，在 Agent 实现中需要进行解析并完成后续处理工作。参数传入的字符串仅仅在 Agent_OnLoad 函数里有效。</p><p>需要强调的是，这个时候由于虚拟机并未完成初始化工作，并不是所有的 JVMTI 函数都可以被使用。</p><p>Agent 还可以在运行时加载。具体说来，虚拟机会在运行时监听并接受 Agent 的加载，在这个时候，它会使用 Agent 的：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved);</span><br></pre></td></tr></table></figure><p>同样的在这个初始化阶段，不是所有的 JVMTI 的 Capability 参数都处于可操作状态，而且 options 这个 char 数组在这个函数运行之后就会被丢弃，如果需要，需要做好保留工作。</p><p>Agent 的主要功能是通过一系列的在虚拟机上设置的回调（callback）函数完成的，一旦某些事件发生，Agent 所设置的回调函数就会被调用，来完成特定的需求。</p><h3 id="卸载"><a href="#卸载" class="headerlink" title="卸载"></a>卸载</h3><p>最后，Agent 完成任务，或者虚拟机关闭的时候，虚拟机都会调用一个类似于类析构函数的方法来完成最后的清理任务，注意这个函数和虚拟机自己的 VM_DEATH 事件是不同的。</p><h3 id="执行逻辑分析"><a href="#执行逻辑分析" class="headerlink" title="执行逻辑分析"></a>执行逻辑分析</h3><p><a href="https://www.jianshu.com/p/8775c1542b52">参考文档</a></p>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;h2 id=&quot;JVMTI的定义及原理&quot;&gt;&lt;a href=&quot;#JVMTI的定义及原理&quot; class=&quot;headerlink&quot; title=&quot;JVMTI的定义及原理&quot;&gt;&lt;/a&gt;JVMTI的定义及原理&lt;/h2&gt;&lt;p&gt;在介绍JVMTI之前，需要先了解下Java平台调试体系JPDA（Ja</summary>
-      
-    
-    
-    
     
   </entry>
   
@@ -283,11 +343,11 @@
     <category term="中间件" scheme="http://example.com/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
     
     
-    <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
-    
     <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
     
     <category term="MQ" scheme="http://example.com/tags/MQ/"/>
+    
+    <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
     
     <category term="ZOOKEEPER" scheme="http://example.com/tags/ZOOKEEPER/"/>
     
@@ -313,39 +373,13 @@
     <category term="中间件" scheme="http://example.com/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
     
     
+    <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
+    
+    <category term="MQ" scheme="http://example.com/tags/MQ/"/>
+    
     <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
     
     <category term="RabbitMQ" scheme="http://example.com/tags/RabbitMQ/"/>
-    
-    <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
-    
-    <category term="MQ" scheme="http://example.com/tags/MQ/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>MQ详解及四大常用MQ对比</title>
-    <link href="http://example.com/2021/08/02/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/"/>
-    <id>http://example.com/2021/08/02/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/</id>
-    <published>2021-08-02T11:19:56.000Z</published>
-    <updated>2021-12-01T03:42:05.835Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="消息队列概述"><a href="#消息队列概述" class="headerlink" title="消息队列概述"></a>消息队列概述</h2><h3 id="消息队列使用场景及其优缺点"><a href="#消息队列使用场景及其优缺点" class="headerlink" title="消息队列使用场景及其优缺点"></a>消息队列使用场景及其优缺点</h3><ul><li><p>消息队列使用场景</p><ul><li>异步通信<ul><li>紧急重要（需要立刻响应）的业务放到该调用方法中，响应要求不高的使用消息队列，放到MQ队列中，供消费者处理。</li><li>提高系统响应时长</li></ul></li><li>削峰<ul><li>过载保护和缓冲</li></ul></li><li>解耦<ul><li>降低工程间的强依赖程度，针对异构系统进行适配。</li></ul></li><li>冗余<ul><li>消息队列把数据进行持久化直到它们已经被完全处理，通过这一方式规避了数据丢失风险。</li><li>许多消息队列所采用的”插入-获取-删除”范式中，在把一个消息从队列中删除之前，需要你的处理系统明确的指出该消息已经被处理完毕，从而确保你的数据被安全的保存直到你使用完毕。</li></ul></li><li>保证执行顺序</li><li>数据流处理<ul><li>ELK</li></ul></li></ul></li><li><p>消息队列优点</p><ul><li>低耦合</li><li>可靠投递</li><li>广播</li><li>流量控制</li><li>最终一致性</li><li>实时处理框架支撑等</li></ul></li><li><p>消息队列的问题</p><ul><li>系统可用性降低<ul><li>如何保证消息队列可用性？</li></ul></li><li>系统复杂度提高<ul><li>消息队列语义</li><li>如何保证没有重复消费</li><li>如何保证没有消息丢失</li><li>如何保证消息顺序</li></ul></li><li>一致性问题<ul><li>部分消费成功部分消费失败？</li></ul></li></ul></li></ul><h3 id="消息中间件组成"><a href="#消息中间件组成" class="headerlink" title="消息中间件组成"></a>消息中间件组成</h3><h4 id="Broker"><a href="#Broker" class="headerlink" title="Broker"></a>Broker</h4><p>消息服务器，作为server提供消息核心服务</p><h4 id="Producer"><a href="#Producer" class="headerlink" title="Producer"></a>Producer</h4><p>消息生产者，业务的发起方，负责生产消息传输给broker，</p><h4 id="Topic"><a href="#Topic" class="headerlink" title="Topic"></a>Topic</h4><p>主题，发布订阅模式下的消息统一汇集地，不同生产者向topic发送消息，由MQ服务器分发到不同的订阅者，实现消息的<strong>广播</strong></p><h4 id="Queue"><a href="#Queue" class="headerlink" title="Queue"></a>Queue</h4><p>队列，PTP模式下，特定生产者向特定queue发送消息，消费者订阅特定的queue完成指定消息的接收</p><h4 id="Topic-VS-Queue"><a href="#Topic-VS-Queue" class="headerlink" title="Topic VS Queue"></a>Topic VS Queue</h4><ul><li><p><strong>Queue</strong>: 实现了负载均衡，将producer生产的消息发送到消息队列中，由多个消费者消费。但一个消息只能被一个消费者接受，当没有消费者可用时，这个消息会被保存直到有一个可用的消费者。</p></li><li><p><strong>Topic</strong>: 实现了发布和订阅，当你发布一个消息，所有订阅这个topic的服务都能得到这个消息，所以从1到N个订阅者都能得到一个消息的拷贝。</p></li></ul><h4 id="Message"><a href="#Message" class="headerlink" title="Message"></a>Message</h4><p>消息体，根据不同通信协议定义的固定格式进行编码的数据包，来封装业务数据，实现消息的传输</p><h3 id="消息中间件模式"><a href="#消息中间件模式" class="headerlink" title="消息中间件模式"></a>消息中间件模式</h3><h4 id="点对点（PTP）"><a href="#点对点（PTP）" class="headerlink" title="点对点（PTP）"></a>点对点（PTP）</h4><p>PTP点对点： <strong>使用Queue作为通信载体</strong></p><p><img src="/2021/08/02/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011037.png"></p><p>说明：</p><ul><li>消息生产者生产消息发送到queue中，然后消息消费者从queue中取出并且消费消息。</li><li>消息被消费以后，queue中不再存储，所以消息消费者不可能消费到已经被消费的消息。 Queue支持存在多个消费者，<strong>但是对一个消息而言，只会有一个消费者可以消费</strong>。</li></ul><h4 id="发布-订阅-PUB-SUB"><a href="#发布-订阅-PUB-SUB" class="headerlink" title="发布/订阅(PUB/SUB)"></a>发布/订阅(PUB/SUB)</h4><p>Pub/Sub发布订阅（广播）：<strong>使用topic作为通信载体</strong></p><p><img src="/2021/08/02/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011041.png"></p><p>说明：</p><ul><li>消息生产者（发布）将消息发布到topic中，同时有多个消息消费者（订阅）消费该消息。和点对点方式不同，<strong>发布到topic的消息会被所有订阅者消费</strong>。</li></ul><h3 id="消息中间件常用协议"><a href="#消息中间件常用协议" class="headerlink" title="消息中间件常用协议"></a>消息中间件常用协议</h3><h4 id="AMQP-Advanced-Message-Queuing-Protocol-协议"><a href="#AMQP-Advanced-Message-Queuing-Protocol-协议" class="headerlink" title="AMQP(Advanced Message Queuing Protocol)协议"></a>AMQP(Advanced Message Queuing Protocol)协议</h4><p>一个提供统一消息服务的应用层标准高级消息队列协议,是应用层协议的一个开放标准,为面向消息的中间件设计。</p><p>基于此协议的客户端与消息中间件可传递消息，并不受客户端/中间件不同产品，不同开发语言等条件的限制。</p><p>优点：可靠、通用</p><h4 id="MQTT（Message-Queuing-Telemetry-Transport，消息队列遥测传输）协议"><a href="#MQTT（Message-Queuing-Telemetry-Transport，消息队列遥测传输）协议" class="headerlink" title="MQTT（Message Queuing Telemetry Transport，消息队列遥测传输）协议"></a>MQTT（Message Queuing Telemetry Transport，消息队列遥测传输）协议</h4><p>IBM开发的一个即时通讯协议，有可能成为物联网的重要组成部分。</p><p>该协议支持所有平台，几乎可以把所有联网物品和外部连接起来，被用来当做传感器和致动器（比如通过Twitter让房屋联网）的通信协议。 </p><p>优点：格式简洁、占用带宽小、移动端通信、PUSH、嵌入式系统</p><h4 id="STOMP（Streaming-Text-Orientated-Message-Protocol，流文本定向消息协议）协议"><a href="#STOMP（Streaming-Text-Orientated-Message-Protocol，流文本定向消息协议）协议" class="headerlink" title="STOMP（Streaming Text Orientated Message Protocol，流文本定向消息协议）协议"></a>STOMP（Streaming Text Orientated Message Protocol，流文本定向消息协议）协议</h4><p>是一种为MOM(Message Oriented Middleware，面向消息的中间件)设计的简单文本协议。</p><p>STOMP提供一个可互操作的连接格式，允许客户端与任意STOMP消息代理（Broker）进行交互。</p><p>优点：命令模式（非topic\queue模式）</p><h4 id="XMPP（Extensible-Messaging-and-Presence-Protocol，可扩展消息处理现场协议）协议"><a href="#XMPP（Extensible-Messaging-and-Presence-Protocol，可扩展消息处理现场协议）协议" class="headerlink" title="XMPP（Extensible Messaging and Presence Protocol，可扩展消息处理现场协议）协议"></a>XMPP（Extensible Messaging and Presence Protocol，可扩展消息处理现场协议）协议</h4><p>基于可扩展标记语言（XML）的协议，多用于即时消息（IM）以及在线现场探测。</p><p>适用于服务器之间的准即时操作。</p><p>核心是基于XML流传输，这个协议可能最终允许因特网用户向因特网上的其他任何人发送即时消息，即使其操作系统和浏览器不同。</p><p>优点：通用公开、兼容性强、可扩展、安全性高，但XML编码格式占用带宽大</p><h4 id="其他基于TCP-IP自定义的协议"><a href="#其他基于TCP-IP自定义的协议" class="headerlink" title="其他基于TCP/IP自定义的协议"></a>其他基于TCP/IP自定义的协议</h4><p>有些特殊框架（如：redis、kafka、zeroMq等）根据自身需要未严格遵循MQ规范，而是基于TCP\IP自行封装了一套协议，通过网络socket接口进行传输，实现了MQ的功能。</p><h3 id="常用消息中间件MQ总结"><a href="#常用消息中间件MQ总结" class="headerlink" title="常用消息中间件MQ总结"></a>常用消息中间件MQ总结</h3><h4 id="Kafka"><a href="#Kafka" class="headerlink" title="Kafka"></a>Kafka</h4><p>Apache下的一个子项目，使用scala实现的一个高性能分布式Pub/Sub消息队列系统，具有以下特性：</p><ul><li>快速持久化：通过磁盘顺序读写与零拷贝机制，可以在O(1)的系统开销下进行消息持久化；</li><li>高吞吐：在一台普通的服务器上既可以达到10W/s的吞吐速率；</li><li>高堆积：支持topic下消费者较长时间离线，消息堆积量大；</li><li>完全的分布式系统：Broker、Producer、Consumer都原生自动支持分布式，依赖zookeeper（已移除）自动实现复杂均衡；</li><li>支持Hadoop数据并行加载：对于像Hadoop的一样的日志数据和离线分析系统，但又要求实时处理的限制，这是一个可行的解决方案。</li></ul><h4 id="RocketMQ"><a href="#RocketMQ" class="headerlink" title="RocketMQ"></a>RocketMQ</h4><p>阿里参照kafka设计思想使用java实现的一套mq。同时将阿里系内部多款mq产品（Notify、metaq）进行整合，只维护核心功能，去除了所有其他运行时依赖，保证核心功能最简化，在此基础上配合阿里上述其他开源产品实现不同场景下mq的架构，目前主要多用于订单交易系统。</p><p>具有以下特点：</p><ul><li>能够保证严格的消息顺序</li><li>提供针对消息的过滤功能</li><li>提供丰富的消息拉取模式</li><li>高效的订阅者水平扩展能力</li><li>实时的消息订阅机制</li><li>亿级消息堆积能力</li></ul><h4 id="RabbitMQ"><a href="#RabbitMQ" class="headerlink" title="RabbitMQ"></a>RabbitMQ</h4><p>使用Erlang编写的一个开源的消息队列，本身支持很多的协议：AMQP，XMPP, SMTP,STOMP，也正是如此，使的它变的非常重量级，更适合于企业级的开发。</p><p>同时实现了Broker架构，核心思想是生产者不会将消息直接发送给队列，消息在发送给客户端时先在中心队列排队。</p><p>对路由(Routing)，负载均衡(Load balance)、数据持久化都有很好的支持。</p><p>多用于进行企业级的ESB整合。</p><h4 id="ZeroMQ"><a href="#ZeroMQ" class="headerlink" title="ZeroMQ"></a>ZeroMQ</h4><p>号称最快的消息队列系统，专门为高吞吐量/低延迟的场景开发，在金融界的应用中经常使用，偏重于实时数据通信场景。</p><p>ZMQ能够实现RabbitMQ不擅长的高级/复杂的队列，但是开发人员需要自己组合多种技术框架，开发成本高。</p><p>因此ZeroMQ具有一个独特的非中间件的模式，更像一个socket library，你不需要安装和运行一个消息服务器或中间件，因为你的应用程序本身就是使用ZeroMQ API完成逻辑服务的角色。</p><p>但是ZeroMQ仅提供<strong>非持久性的队列</strong>，如果down机，数据将会丢失。如：Twitter的Storm中使用ZeroMQ作为数据流的传输。</p><p>ZeroMQ套接字是与传输层无关的：ZeroMQ套接字对所有传输层协议定义了统一的API接口。默认支持 进程内(inproc) ，进程间(IPC) ，多播，TCP协议，在不同的协议之间切换只要简单的改变连接字符串的前缀。可以在任何时候以最小的代价从进程间的本地通信切换到分布式下的TCP通信。ZeroMQ在背后处理连接建立，断开和重连逻辑。</p><p>特性：</p><ul><li>无锁的队列模型：对于跨线程间的交互（用户端和session）之间的数据交换通道pipe，采用无锁的队列算法CAS；在pipe的两端注册有异步事件，在读或者写消息到pipe的时，会自动触发读写事件。</li><li>批量处理的算法：对于批量的消息，进行了适应性的优化，可以批量的接收和发送消息。</li><li>多核下的线程绑定，无须CPU切换：区别于传统的多线程并发模式，信号量或者临界区，zeroMQ充分利用多核的优势，每个核绑定运行一个工作者线程，避免多线程之间的CPU切换开销。</li></ul><h4 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h4><p>本身支持MQ功能，所以完全可以当做一个轻量级的队列服务来使用。</p><p>实验表明：</p><ul><li>入队时，当数据比较小时Redis的性能要高于RabbitMQ，而如果数据大小超过了10K，Redis则慢的无法忍受；</li><li>出队时，无论数据大小，Redis都表现出非常好的性能，而RabbitMQ的出队性能则远低于Redis。</li></ul><h3 id="主要消息中间件的比较"><a href="#主要消息中间件的比较" class="headerlink" title="主要消息中间件的比较"></a>主要消息中间件的比较</h3><p><img src="/2021/08/02/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011141.png"></p>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;h2 id=&quot;消息队列概述&quot;&gt;&lt;a href=&quot;#消息队列概述&quot; class=&quot;headerlink&quot; title=&quot;消息队列概述&quot;&gt;&lt;/a&gt;消息队列概述&lt;/h2&gt;&lt;h3 id=&quot;消息队列使用场景及其优缺点&quot;&gt;&lt;a href=&quot;#消息队列使用场景及其优缺点&quot; class=&quot;he</summary>
-      
-    
-    
-    
-    <category term="中间件" scheme="http://example.com/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
-    
-    
-    <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
-    
-    <category term="MQ" scheme="http://example.com/tags/MQ/"/>
     
   </entry>
   
@@ -449,11 +483,11 @@
     <category term="中间件" scheme="http://example.com/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
     
     
-    <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
-    
     <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
     
     <category term="MQ" scheme="http://example.com/tags/MQ/"/>
+    
+    <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
     
   </entry>
   
@@ -470,11 +504,11 @@
     <category term="中间件" scheme="http://example.com/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
     
     
-    <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
-    
     <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
     
     <category term="MQ" scheme="http://example.com/tags/MQ/"/>
+    
+    <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
     
   </entry>
   
@@ -500,39 +534,11 @@
     <category term="中间件" scheme="http://example.com/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
     
     
-    <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
-    
     <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
     
     <category term="MQ" scheme="http://example.com/tags/MQ/"/>
     
-  </entry>
-  
-  <entry>
-    <title>消息中间件Kafka系列之Kafka复制原理</title>
-    <link href="http://example.com/2021/05/16/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/Kafka/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/"/>
-    <id>http://example.com/2021/05/16/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/Kafka/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/</id>
-    <published>2021-05-16T10:03:58.000Z</published>
-    <updated>2021-08-12T03:37:01.869Z</updated>
-    
-    <content type="html"><![CDATA[<h3 id="预备知识"><a href="#预备知识" class="headerlink" title="预备知识"></a>预备知识</h3><p><img src="/2021/05/16/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/Kafka/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/img.png"></p><h4 id="HW（High-Watermark）："><a href="#HW（High-Watermark）：" class="headerlink" title="HW（High Watermark）："></a>HW（High Watermark）：</h4><ul><li>在分区高水位以下的消息被认为是已提交消息，反之就是未提交消息；</li><li>定义消息可见性，即用来标识分区下的哪些消息是可以被消费者消费的；</li><li>小于等于HW值的所有消息都被认为是“已备份”的（replicated）。</li></ul><h4 id="LEO（Log-End-Offset）"><a href="#LEO（Log-End-Offset）" class="headerlink" title="LEO（Log End Offset）"></a>LEO（Log End Offset）</h4><ul><li>记录了该副本底层日志(log)中下一条消息的位移值（注意是下一条消息！！）</li><li>数字 15 所在的方框是虚线，这就说明，这个副本当前只有 15 条消息，位移值是从 0 到 14，下一条新消息的位移是 15；</li></ul><h3 id="更新机制"><a href="#更新机制" class="headerlink" title="更新机制"></a>更新机制</h3><p><img src="/2021/05/16/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/Kafka/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6Kafka%E7%B3%BB%E5%88%97%E4%B9%8BKafka%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86/img_1.png"></p><p><strong>流程如下</strong></p><ol><li>生产者写入消息到leader副本</li><li>leader副本LEO值更新</li><li>follower副本尝试拉取消息，发现有消息可以拉取，更新自身LEO</li><li>follower副本继续尝试拉取消息，这时会更新remote副本LEO，同时会更新leader副本的HW</li><li>完成4步骤后，leader副本会将已更新过的HW发送给所有follower副本</li><li>follower副本接收leader副本HW，更新自身的HW</li></ol><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Kafka副本之间的数据复制既不是完全的同步复制，也不是单纯的异步复制；</span><br><span class="line">Leader副本的HW更新原则：取当前leader副本的LEO和所有remote副本的LEO的最小值</span><br><span class="line">Follower副本的HW更新原则：取leader副本发送的HW和自身的LEO中的最小值</span><br></pre></td></tr></table></figure>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;h3 id=&quot;预备知识&quot;&gt;&lt;a href=&quot;#预备知识&quot; class=&quot;headerlink&quot; title=&quot;预备知识&quot;&gt;&lt;/a&gt;预备知识&lt;/h3&gt;&lt;p&gt;&lt;img src=&quot;/2021/05/16/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/Kafka/%E6</summary>
-      
-    
-    
-    
-    <category term="中间件" scheme="http://example.com/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
-    
-    
     <category term="Kafka" scheme="http://example.com/tags/Kafka/"/>
-    
-    <category term="消息中间件" scheme="http://example.com/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"/>
-    
-    <category term="MQ" scheme="http://example.com/tags/MQ/"/>
     
   </entry>
   

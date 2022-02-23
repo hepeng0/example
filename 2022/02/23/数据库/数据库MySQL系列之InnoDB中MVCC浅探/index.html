@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="数据库MySQL系列之MVCC浅探"><meta name="keywords" content="MySQL,数据库,MVCC,InnoDB"><meta name="author" content="何鹏 [smile.hepeng@qq.com]"><meta name="copyright" content="何鹏 [smile.hepeng@qq.com]"><title>数据库MySQL系列之MVCC浅探 | 沉默者</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.9.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.9.0"><meta name="format-detection" content="telephone=no"><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  hexoVersion: '5.4.0'
+} </script><link rel="alternate" href="/atom.xml" title="沉默者" type="application/atom+xml">
+</head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="true"><div class="toggle-sidebar-info text-center"><span data-toggle="Toggle article">Toggle site</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">Catalog</div><div class="sidebar-toc__progress"><span class="progress-notice">You've read</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#MVCC%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">MVCC简介</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#MVCC%E5%90%8D%E8%AF%8D%E8%A7%A3%E9%87%8A"><span class="toc-number">1.1.</span> <span class="toc-text">MVCC名词解释</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MVCC%E8%A7%A3%E5%86%B3%E4%BA%86%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98"><span class="toc-number">1.2.</span> <span class="toc-text">MVCC解决了什么问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%94%81%E5%88%86%E7%B1%BB"><span class="toc-number">1.3.</span> <span class="toc-text">锁分类</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#MVCC%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="toc-number">2.</span> <span class="toc-text">MVCC实现原理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#InnoDB-MVCC%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90"><span class="toc-number">2.1.</span> <span class="toc-text">InnoDB MVCC具体实现分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#SELECT"><span class="toc-number">2.1.1.</span> <span class="toc-text">SELECT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#INSERT"><span class="toc-number">2.1.2.</span> <span class="toc-text">INSERT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DELETE"><span class="toc-number">2.1.3.</span> <span class="toc-text">DELETE</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#UPDATE"><span class="toc-number">2.1.4.</span> <span class="toc-text">UPDATE</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%B4%E6%98%8E"><span class="toc-number">2.1.5.</span> <span class="toc-text">说明</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AF%B9%E4%BA%8EMVCC%E7%9A%84%E6%80%BB%E7%BB%93"><span class="toc-number">3.</span> <span class="toc-text">对于MVCC的总结</span></a></li></ol></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="https://img2.baidu.com/it/u=928705063,3876627980&amp;fm=26&amp;fmt=auto&amp;gp=0.jpg"></div><div class="author-info__name text-center">何鹏 [smile.hepeng@qq.com]</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">42</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">35</span></a><a class="author-info-articles__categories article-meta" href="/categories"><span class="pull-left">Categories</span><span class="pull-right">7</span></a></div></div></div><div id="content-outer"><div class="plain" id="top-container"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">沉默者</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a></span><span class="pull-right"><a class="site-page social-icon search"><i class="fa fa-search"></i><span> Search</span></a></span></div></div><div class="layout" id="content-inner"><article id="post"><div class="plain" id="post-title">数据库MySQL系列之MVCC浅探</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2022-02-23</time><span class="post-meta__separator">|</span><i class="fa fa-inbox" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"> 数据库</a><span class="post-meta__separator">|</span><span class="post-meta-wordcount"><span>Word count: </span><span class="word-count">1.8k</span><span class="post-meta__separator">|</span><span>Reading time: 5 min</span></span></div><div class="article-container" id="post-content"><h1 id="MVCC简介"><a href="#MVCC简介" class="headerlink" title="MVCC简介"></a>MVCC简介</h1><h2 id="MVCC名词解释"><a href="#MVCC名词解释" class="headerlink" title="MVCC名词解释"></a>MVCC名词解释</h2><p>MVCC (Multiversion Concurrency Control)，即多版本并发控制技术。</p>
+<h2 id="MVCC解决了什么问题"><a href="#MVCC解决了什么问题" class="headerlink" title="MVCC解决了什么问题"></a>MVCC解决了什么问题</h2><p>它使得大部分支持行锁的事务引擎（InnoDB,Falcon以及PBXT等），不再单纯的使用行锁来进行数据库的并发控制，取而代之的是把数据库的行锁与行的多个版本结合起来。<br>只需要很小的开销，就可以实现非锁定读，从而大大提高数据库系统的并发性能。</p>
+<h2 id="锁分类"><a href="#锁分类" class="headerlink" title="锁分类"></a>锁分类</h2><ul>
+<li><strong>读锁</strong>：也叫共享锁、S锁，若事务T对数据对象A加上S锁，则事务T可以读A但不能修改A，其他事务只能再对A加S锁，而不能加X锁，直到T释放A上的S 锁。这保证了其他事务可以读A，但在T释放A上的S锁之前不能对A做任何修改。</li>
+<li><strong>写锁</strong>：又称排他锁、X锁。若事务T对数据对象A加上X锁，事务T可以读A也可以修改A，其他事务不能再对A加任何锁，直到T释放A上的锁。这保证了其他事务在T释放A上的锁之前不能再读取和修改A。</li>
+<li><strong>表锁</strong>：操作对象是数据表。Mysql大多数锁策略都支持(常见mysql innodb)，是系统开销最低但并发性最低的一个锁策略。事务t对整个表加读锁，则其他事务可读不可写，若加写锁，则其他事务增删改都不行。</li>
+<li><strong>行级锁</strong>：操作对象是数据表中的一行。是MVCC技术用的比较多的，但在MYISAM用不了，行级锁用mysql的储存引擎实现而不是mysql服务器。但行级锁对系统开销较大，处理高并发较好。</li>
+</ul>
+<h1 id="MVCC实现原理"><a href="#MVCC实现原理" class="headerlink" title="MVCC实现原理"></a>MVCC实现原理</h1><p>MVCC是通过保存数据在某个时间点的快照来实现的。不同存储引擎的MVCC实现是不同的，典型的有乐观并发控制和悲观并发控制。</p>
+<h2 id="InnoDB-MVCC具体实现分析"><a href="#InnoDB-MVCC具体实现分析" class="headerlink" title="InnoDB MVCC具体实现分析"></a>InnoDB MVCC具体实现分析</h2><p>innodb MVCC主要是为<strong>Repeatable-Read事务隔离级别</strong>做的。在此隔离级别下，A、B客户端所示的数据相互隔离，互相更新不可见。</p>
+<p>innodb存储的最基本row中包含一些额外的存储信息： DATA_TRX_ID，DATA_ROLL_PTR，DB_ROW_ID，DELETE BIT。</p>
+<ul>
+<li>6字节的DATA_TRX_ID 标记了最新更新这条行记录的transaction id，每处理一个事务，其值自动+1；</li>
+<li>7字节的DATA_ROLL_PTR 指向当前记录项的rollback segment的undo log记录，找之前版本的数据就是通过这个指针；</li>
+<li>6字节的DB_ROW_ID，当由innodb自动产生聚集索引时，聚集索引包括这个DB_ROW_ID的值，否则聚集索引中不包括这个值，这个用于索引当中；</li>
+<li>DELETE BIT位用于标识该记录是否被删除，这里的不是真正的删除数据，而是标志出来的删除，真正意义的删除是在commit的时候。</li>
+</ul>
+<p><img src="/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8BInnoDB%E4%B8%ADMVCC%E6%B5%85%E6%8E%A2/img.png" alt="img.png"></p>
+<p>具体的执行过程</p>
+<p>begin-&gt;用排他锁锁定该行-&gt;记录redo log-&gt;记录undo log-&gt;修改当前行的值，写事务编号，回滚指针指向undo log中的修改前的行</p>
+<p>该过程准确说是UPDATE的事务过程，其实undo log分insert和update undo log，因为insert时，原始的数据并不存在，所以回滚时把insert undo log丢弃即可，而update undo log则必须遵守上述过程。</p>
+<h3 id="SELECT"><a href="#SELECT" class="headerlink" title="SELECT"></a>SELECT</h3><p>Innodb检查每行数据，确保他们符合两个标准：</p>
+<ol>
+<li><p>InnoDB只查找版本早于当前事务版本的数据行(也就是数据行的版本必须小于或等于当前事务的版本)，这确保当前事务读取的行要么是事务之前已经存在的，要么是由当前事务创建或修改的；</p>
+</li>
+<li><p>行的删除版本要么未定义,要么大于当前事务版本号,这可以确保事务读取到的行，在事务开始之前未被删除。</p>
+</li>
+</ol>
+<p>只有a,b同时满足的记录，才能返回作为查询结果。</p>
+<h3 id="INSERT"><a href="#INSERT" class="headerlink" title="INSERT"></a>INSERT</h3><p>InnoDB为新插入的每一行保存当前事务版本号作为版本号。</p>
+<h3 id="DELETE"><a href="#DELETE" class="headerlink" title="DELETE"></a>DELETE</h3><p>InnoDB会为删除的每一行保存当前事务的版本号(事务的ID)作为删除标识。</p>
+<h3 id="UPDATE"><a href="#UPDATE" class="headerlink" title="UPDATE"></a>UPDATE</h3><p>InnoDB执行UPDATE，实际上是新插入了一行记录，并保存其创建时间为当前事务的ID，同时保存当前事务ID到要UPDATE的行的删除时间。</p>
+<h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><p>insert操作时 “创建时间”=DB_ROW_ID，这时，“删除时间 ”是未定义的；</p>
+<p>update时，复制新增行的“创建时间”=DB_ROW_ID，删除时间未定义，旧数据行“创建时间”不变，删除时间=该事务的DB_ROW_ID；</p>
+<p>delete操作，相应数据行的“创建时间”不变，删除时间=该事务的DB_ROW_ID；</p>
+<p>select操作对两者都不修改，只读相应的数据</p>
+<h1 id="对于MVCC的总结"><a href="#对于MVCC的总结" class="headerlink" title="对于MVCC的总结"></a>对于MVCC的总结</h1><p>上述更新前建立undo log，根据各种策略读取时非阻塞就是MVCC，undo log中的行就是MVCC中的多版本。</p>
+<p>这个可能与我们所理解的MVCC有较大的出入，一般我们认为MVCC有下面几个特点：</p>
+<ul>
+<li>每行数据都存在一个版本，每次数据更新时都更新该版本</li>
+<li>修改时Copy出当前版本随意修改，各个事务之间无干扰 </li>
+<li>保存时比较版本号，如果成功（commit），则覆盖原记录；失败则放弃copy（rollback）</li>
+</ul>
+<p>就是每行都有版本号，保存时根据版本号决定是否成功，听起来含有乐观锁的味道。</p>
+<p>而Innodb的实现方式是：</p>
+<ul>
+<li>事务以排他锁的形式修改原始数据</li>
+<li>把修改前的数据存放于undo log，通过回滚指针与主数据关联</li>
+<li>修改成功（commit）啥都不做，失败则恢复undo log中的数据（rollback）</li>
+</ul>
+<p>二者最本质的区别是，当修改数据时是否要排他锁定，如果锁定了还算不算是MVCC？ </p>
+<p>Innodb的实现真算不上MVCC，因为并没有实现核心的多版本共存，undo log中的内容只是串行化的结果，记录了多个事务的过程，不属于多版本共存。</p>
+<p>但理想的MVCC是难以实现的，当事务仅修改一行记录使用理想的MVCC模式是没有问题的，可以通过比较版本号进行回滚；但当事务影响到多行数据时，理想的MVCC据无能为力了。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">比如，如果Transaciton1执行理想的MVCC，修改Row1成功，而修改Row2失败，此时需要回滚Row1，但因为Row1没有被锁定，其数据可能又被Transaction2所修改，如果此时回滚Row1的内容，则会破坏Transaction2的修改结果，导致Transaction2违反ACID。</span><br></pre></td></tr></table></figure>
+
+<p>理想MVCC难以实现的根本原因在于企图通过乐观锁代替二段提交。</p>
+<p>修改两行数据，但为了保证其一致性，与修改两个分布式系统中的数据并无区别，而二提交是目前这种场景保证一致性的唯一手段。</p>
+<p>二段提交的本质是锁定，乐观锁的本质是消除锁定，二者矛盾，故理想的MVCC难以真正在实际中被应用，Innodb只是借了MVCC这个名字，提供了读的非阻塞而已。</p>
+</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MySQL/">MySQL</a><a class="post-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><a class="post-meta__tags" href="/tags/MVCC/">MVCC</a><a class="post-meta__tags" href="/tags/InnoDB/">InnoDB</a></div><nav id="pagination"><div class="next-post pull-right"><a href="/2021/12/08/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5%E6%8A%80%E6%9C%AF/%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5%E4%B9%8BDebezium%E6%8A%80%E6%9C%AF%E7%A0%94%E7%A9%B6/"><span>增量数据同步之Debezium技术研究</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '83850031ee87c27765eb',
+  clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',
+  repo: 'blob-comment',
+  owner: 'hepeng0',
+  admin: 'hepeng0',
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN'
+})
+gitalk.render('gitalk-container')</script></div></div><footer><div class="layout" id="footer"><div class="copyright">&copy;2018 - 2022 By 何鹏 [smile.hepeng@qq.com]</div><div class="framework-info"><span>Driven - </span><a target="_blank" rel="noopener" href="http://hexo.io"><span>Hexo</span></a><span class="footer-separator">|</span><span>Theme - </span><a target="_blank" rel="noopener" href="https://github.com/Molunerfinn/hexo-theme-melody"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.9.0"></script><script src="/js/fancybox.js?version=1.9.0"></script><script src="/js/sidebar.js?version=1.9.0"></script><script src="/js/copy.js?version=1.9.0"></script><script src="/js/fireworks.js?version=1.9.0"></script><script src="/js/transition.js?version=1.9.0"></script><script src="/js/scroll.js?version=1.9.0"></script><script src="/js/head.js?version=1.9.0"></script><script src="/js/search/local-search.js"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+  $('#top-container').addClass('is-mobile')
+}</script><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">Local search</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts"></div></div></div><hr><div id="local-search-results"><div id="local-hits"></div><div id="local-stats"><div class="local-search-stats__hr" id="hr"><span>Powered by</span> <a target="_blank" rel="noopener" href="https://github.com/wzpan/hexo-generator-search" style="color:#49B1F5;">hexo-generator-search</a></div></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div></body></html>
