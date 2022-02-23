@@ -74,7 +74,7 @@ JDK1.6、JDK1.7、JDK1.8 JVM 内存模型主要有以下差异：
 <p><code>所需的内存空间在编译期间完成分配，当进入一个方法时，这个方法需要在帧中分配多大的局部变量空间是完全确定的，在方法运行期间不会改变局部变量表的大小。</code> </p>
 <ul>
 <li><p>如果局部变量是Java的8种基本基本数据类型，则存在局部变量表中，如果是引用类型。如new出来的String，局部变量表中存的是引用，而实例在堆中。</p>
-<p><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img_10.png" alt></p>
+<p><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img_10.png" alt></p>
 </li>
 </ul>
 </li>
@@ -117,7 +117,7 @@ JDK1.6、JDK1.7、JDK1.8 JVM 内存模型主要有以下差异：
 <li><p>为执行字节码服务</p>
 </li>
 <li>StackOverFlowError（不允许动态扩展，栈深度大于虚拟机允许的栈深度） 和 OutOfMemoryError （允许动态扩展，内存不足）</li>
-<li>方法执行时入栈，方法执行完出栈，入栈出栈的时机很明确，所以这块区域不需要进行 GC。<br><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img4.png" alt></li>
+<li>方法执行时入栈，方法执行完出栈，入栈出栈的时机很明确，所以这块区域不需要进行 GC。<br><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img4.png" alt></li>
 <li>扩展阅读： <a target="_blank" rel="noopener" href="https://www.cnblogs.com/noKing/p/8167700.html">栈帧</a></li>
 <li>扩展阅读： <a target="_blank" rel="noopener" href="https://www.pianshen.com/article/9519386034/">逃逸分析-栈上分配-TLAB</a>, 对于开启逃逸分析的程序而言，不会逃逸的对象也会分配在栈上。</li>
 </ul>
@@ -127,7 +127,7 @@ JDK1.6、JDK1.7、JDK1.8 JVM 内存模型主要有以下差异：
 </ul>
 <h5 id="线程共享"><a href="#线程共享" class="headerlink" title="线程共享"></a>线程共享</h5><h6 id="堆"><a href="#堆" class="headerlink" title="堆"></a>堆</h6><ul>
 <li><p>所有线程共享的一块内存区域，在虚拟机启动时创建。此内存区域的唯一目的就是存放<strong>对象实例和数组</strong>，<em>几乎</em> 所有的对象实例以及数组都在这里分配内存(随着JIT编译器的发展和逃逸分析技术的成熟，这个说法也不是那么绝对)。</p>
-<p>  <img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/cb25f0d4c52a9ffca1925e9694c6954d.jpg" alt="java堆空间"></p>
+<p>  <img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/cb25f0d4c52a9ffca1925e9694c6954d.jpg" alt="java堆空间"></p>
 </li>
 <li><p>java8后永久代已移除。</p>
 </li>
@@ -168,7 +168,7 @@ JDK1.6、JDK1.7、JDK1.8 JVM 内存模型主要有以下差异：
 String.intern()先检查字符串常量池，发现存在"lonely"的字符串，所以直接返回，这时候两个地址不一样，所以返回false。
 
 - new String("lonely")+new String("wolf")会产生5个对象，2个在字符串常量池，3个在堆。
-  <img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img_6.png" class title="img.png">
+  ![img.png](./JVM基础系列之运行时内存分配模型/img_6.png)
 
   - 如果在1.7和1.8中会检查字符串常量池，发现没有lonelywolf的字符串，所以会在字符串常量池创建一个，指向堆中的字符串。
   - JDK1.6中不会指向堆，会重新创建一个lonelywolf的字符串放到字符串常量池，所以才会产生不同的结果。
@@ -211,7 +211,7 @@ String.intern()先检查字符串常量池，发现存在"lonely"的字符串，
 <li>进程之间相互独立，但同一进程下的各个线程之间共享程序的内存空间(包括代码段、数据集、堆等)及一些进程级的资源(如打开文件和信号)，某进程内的线程在其它进程不可见；</li>
 <li>调度和切换：线程上下文切换比进程上下文切换要快得多。</li>
 </ol>
-<p>线程与进程关系的示意图：<br><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img_2.png" class><br><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img_3.png" class></p>
+<p>线程与进程关系的示意图：<br><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img_2.png" alt><br><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img_3.png" alt></p>
 <p><strong>对于一个JAVA进程而言</strong>：</p>
 <ul>
 <li>JAVA进程间的内存分配保持独立</li>
@@ -223,7 +223,7 @@ String.intern()先检查字符串常量池，发现存在"lonely"的字符串，
 <p>除了堆，影响Java程序所占用内存的因素还包括: 栈、永生代、JVM本身、NIO中的DirectBuffer等。</p>
 <p>因此，一般使用Xmx分配给JVM的，肯定不能太多。</p>
 <p>而且，在操作系统上，运行的不仅仅是JVM应用，还会有其他一些守护进程，比如各种日志收集工具、监控工具、安全工具等。它们虽然占用的内存不是很多，但累加起来还是比较可观的。JVM内存和操作系统的剩余内存是一个此消彼长的关系，这些小内存挤占了JVM的发挥空间，就容易出问题。</p>
-<p><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img_7.png" alt></p>
+<p><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/img_7.png" alt></p>
 <p>JVM是我们的主体，所以要把它放在主人公的位置。这种划分方式，就可以把整个内存搞成JVM内存、操作系统物理内存、SWAP三个部分。</p>
 <p>当JVM和其他程序占满了物理内存，接着占满了SWAP内存（交换分区一般不开，此处不展开），当在需要申请内存空间的时候，操作系统发现没有可用的内存空间了。</p>
 <p>这个时候，Linux会启动oom-killer，杀死占用内存最大的进程，这个时候大概率我们的JVM进程。</p>
@@ -276,7 +276,7 @@ String.intern()先检查字符串常量池，发现存在"lonely"的字符串，
 <h4 id="如何排查操作系统内存"><a href="#如何排查操作系统内存" class="headerlink" title="如何排查操作系统内存"></a>如何排查操作系统内存</h4><p>linux下有一个命令lsof，可以看到JVM进程所关联的所有句柄信息，一般可作为参考。</p>
 <p>近一步，使用pmap函数，即可观测到具体的内存分布。但是不要怕，有很多是共享内存。</p>
 <p>具体排查思路可以参考 <a href="/2020/06/18/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%B7%AF/" title="JAVA线上故障排查全套路">JAVA线上故障排查全套路</a> 中的堆外内存溢出。</p>
-<h4 id="内存区域控制参数"><a href="#内存区域控制参数" class="headerlink" title="内存区域控制参数"></a>内存区域控制参数</h4><p><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/内存区域参数.png" alt></p>
+<h4 id="内存区域控制参数"><a href="#内存区域控制参数" class="headerlink" title="内存区域控制参数"></a>内存区域控制参数</h4><p><img src="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8B%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E6%A8%A1%E5%9E%8B/内存区域参数.png" alt></p>
 <ul>
 <li>堆  <code>-Xmx  -Xms</code></li>
 <li>元空间 <code>-XX:MaxMetaspaceSize  -XX:MetaspaceSize</code></li>
@@ -289,7 +289,7 @@ String.intern()先检查字符串常量池，发现存在"lonely"的字符串，
 <p>一般的，我们使用操作系统的2/3作为堆空间，是比较合理的。这是一个经验值。比如6GB的内存，你分配给JVM的，最好不要超过4GB。</p>
 <p>还有，我们上面谈到的swap交换分区，在高并发应用中，一般是关掉的。因为它会造成频繁的页交换，在GC的时候，会引起严重的卡顿。</p>
 <p>但要辩证的思维看待问题。对于低频的，对内存大小有非常大的依赖的情况下，SWAP不仅要开，还要开的大一些。</p>
-</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/JVM/">JVM</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8BJava%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/"><i class="fa fa-chevron-left">  </i><span>JVM基础系列之Java类加载机制</span></a></div><div class="next-post pull-right"><a href="/2021/08/12/%E4%BB%A3%E7%A0%81%E4%BC%98%E5%8C%96%E6%80%BB%E7%BB%93/%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%94%A8%E5%B0%8F%E5%A5%97%E8%B7%AF%E4%B9%8BJava-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84%E4%B8%80%E4%BA%9B%E7%BB%86%E8%8A%82/"><span>代码实用小套路之Java 性能优化的一些细节</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/JVM/">JVM</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2021/08/12/JAVA%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80/JVM%E5%9F%BA%E7%A1%80%E7%B3%BB%E5%88%97%E4%B9%8BJava%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/"><i class="fa fa-chevron-left">  </i><span>JVM基础系列之Java类加载机制</span></a></div><div class="next-post pull-right"><a href="/2021/08/12/%E4%BB%A3%E7%A0%81%E4%BC%98%E5%8C%96%E6%80%BB%E7%BB%93/%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%94%A8%E5%B0%8F%E5%A5%97%E8%B7%AF%E4%B9%8BJava-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E7%9A%84%E4%B8%80%E4%BA%9B%E7%BB%86%E8%8A%82/"><span>代码实用小套路之Java 性能优化的一些细节</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
   clientID: '83850031ee87c27765eb',
   clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',
   repo: 'blob-comment',
