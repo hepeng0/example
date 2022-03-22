@@ -1,0 +1,151 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="InnoDB原理篇之BufferPool缓冲池"><meta name="keywords" content="MySQL,数据库,InnoDB"><meta name="author" content="何鹏 [smile.hepeng@qq.com]"><meta name="copyright" content="何鹏 [smile.hepeng@qq.com]"><title>InnoDB原理篇之BufferPool缓冲池 | 沉默者</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.9.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.9.0"><meta name="format-detection" content="telephone=no"><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><script src="https://v1.hitokoto.cn/?encode=js&amp;charset=utf-8&amp;select=.footer_custom_text" defer></script><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"找不到您查询的内容:${query}"}},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  hexoVersion: '5.4.0'
+} </script><link rel="alternate" href="/atom.xml" title="沉默者" type="application/atom+xml">
+</head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="true"><div class="toggle-sidebar-info text-center"><span data-toggle="切换文章详情">切换站点概览</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFInnoDB%E7%BC%93%E5%86%B2%E6%B1%A0"><span class="toc-number">1.</span> <span class="toc-text">什么是InnoDB缓冲池</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E7%AE%A1%E7%90%86%E4%B8%8E%E6%B7%98%E6%B1%B0%E7%BC%93%E5%86%B2%E6%B1%A0%EF%BC%8C%E4%BD%BF%E5%BE%97%E6%80%A7%E8%83%BD%E6%9C%80%E5%A4%A7%E5%8C%96%E5%91%A2%EF%BC%9F"><span class="toc-number">2.</span> <span class="toc-text">如何管理与淘汰缓冲池，使得性能最大化呢？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A2%84%E8%AF%BB"><span class="toc-number">2.1.</span> <span class="toc-text">预读</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E9%A2%84%E8%AF%BB"><span class="toc-number">2.1.1.</span> <span class="toc-text">什么是预读</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%A2%84%E8%AF%BB%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9C%89%E6%95%88"><span class="toc-number">2.1.2.</span> <span class="toc-text">预读为什么有效</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%8C%89%E9%A1%B5%E8%AF%BB%E5%8F%96%EF%BC%8C%E5%92%8CInnoDB%E7%BC%93%E5%86%B2%E6%B1%A0%E8%AE%BE%E8%AE%A1%E6%9C%89%E5%95%A5%E5%85%B3%E7%B3%BB"><span class="toc-number">2.1.3.</span> <span class="toc-text">按页读取，和InnoDB缓冲池设计有啥关系</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#InnoDB%E6%98%AF%E4%BB%A5%E4%BB%80%E4%B9%88%E7%AE%97%E6%B3%95%EF%BC%8C%E6%9D%A5%E7%AE%A1%E7%90%86%E8%BF%99%E4%BA%9B%E7%BC%93%E5%86%B2%E9%A1%B5%E5%91%A2%EF%BC%9F"><span class="toc-number">2.2.</span> <span class="toc-text">InnoDB是以什么算法，来管理这些缓冲页呢？</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%A0%E7%BB%9F%E7%9A%84LRU%E5%A6%82%E4%BD%95%E8%BF%9B%E8%A1%8C%E7%BC%93%E5%86%B2%E9%A1%B5%E7%AE%A1%E7%90%86"><span class="toc-number">2.2.1.</span> <span class="toc-text">传统的LRU如何进行缓冲页管理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%A2%84%E8%AF%BB%E5%A4%B1%E6%95%88"><span class="toc-number">2.2.2.</span> <span class="toc-text">预读失效</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%93%E5%86%B2%E6%B1%A0%E6%B1%A1%E6%9F%93"><span class="toc-number">2.2.3.</span> <span class="toc-text">缓冲池污染</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8A%E8%BF%B0%E5%8E%9F%E7%90%86%EF%BC%8C%E5%AF%B9%E5%BA%94InnoDB%E9%87%8C%E5%93%AA%E4%BA%9B%E5%8F%82%E6%95%B0%EF%BC%9F"><span class="toc-number">3.</span> <span class="toc-text">上述原理，对应InnoDB里哪些参数？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E6%95%B0%EF%BC%9Ainnodb-buffer-pool-size"><span class="toc-number">3.1.</span> <span class="toc-text">参数：innodb_buffer_pool_size</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E6%95%B0%EF%BC%9Ainnodb-old-blocks-pct"><span class="toc-number">3.2.</span> <span class="toc-text">参数：innodb_old_blocks_pct</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E6%95%B0%EF%BC%9Ainnodb-old-blocks-time"><span class="toc-number">3.3.</span> <span class="toc-text">参数：innodb_old_blocks_time</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li></ol></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="https://img2.baidu.com/it/u=928705063,3876627980&amp;fm=26&amp;fmt=auto&amp;gp=0.jpg"></div><div class="author-info__name text-center">何鹏 [smile.hepeng@qq.com]</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">文章</span><span class="pull-right">55</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">标签</span><span class="pull-right">45</span></a><a class="author-info-articles__categories article-meta" href="/categories"><span class="pull-left">分类</span><span class="pull-right">8</span></a></div></div></div><div id="content-outer"><div class="plain" id="top-container"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">沉默者</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">首页</a><a class="site-page" href="/archives">文章</a><a class="site-page" href="/tags">标签</a><a class="site-page" href="/categories">分类</a></span><span class="pull-right"><a class="site-page social-icon search"><i class="fa fa-search"></i><span> 搜索</span></a></span></div></div><div class="layout" id="content-inner"><article id="post"><div class="plain" id="post-title">InnoDB原理篇之BufferPool缓冲池</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2022-02-25</time><span class="post-meta__separator">|</span><i class="fa fa-inbox" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"> 数据库</a><span class="post-meta__separator">|</span><span class="post-meta-wordcount"><span>字数总计: </span><span class="word-count">2.1k</span><span class="post-meta__separator">|</span><span>阅读时长: 6 分钟</span></span></div><div class="article-container" id="post-content"><p>应用系统分层架构，为了加速数据访问，会把最常访问的数据，放在缓存(cache)里，避免每次都去访问数据库。</p>
+<p>操作系统，会有<strong>缓冲池</strong>(buffer pool)机制，避免每次访问磁盘，以加速数据的访问。</p>
+<p>MySQL作为一个存储系统，同样具有缓冲池(buffer pool)机制，以避免每次查询数据都进行磁盘IO。</p>
+<h2 id="什么是InnoDB缓冲池"><a href="#什么是InnoDB缓冲池" class="headerlink" title="什么是InnoDB缓冲池"></a>什么是InnoDB缓冲池</h2><p><strong>缓存表数据与索引数据</strong>，把磁盘上的数据加载到缓冲池，避免每次访问都进行磁盘IO，起到加速访问的作用。</p>
+<p>速度快，那为啥不把所有数据都放到缓冲池里？</p>
+<p>凡事都具备两面性，抛开数据易失性不说，访问快速的反面是存储容量小：</p>
+<ol>
+<li>缓存访问快，但容量小，数据库存储了200G数据，缓存容量可能只有64G；</li>
+<li>内存访问快，但容量小，买一台笔记本磁盘有2T，内存可能只有16G；</li>
+</ol>
+<p>因此，只能<strong>把“最热”的数据放到“最近”的地方</strong>，以“最大限度”的降低磁盘访问。</p>
+<h2 id="如何管理与淘汰缓冲池，使得性能最大化呢？"><a href="#如何管理与淘汰缓冲池，使得性能最大化呢？" class="headerlink" title="如何管理与淘汰缓冲池，使得性能最大化呢？"></a>如何管理与淘汰缓冲池，使得性能最大化呢？</h2><p>在介绍具体细节之前，先介绍下“预读”的概念。</p>
+<h3 id="预读"><a href="#预读" class="headerlink" title="预读"></a>预读</h3><h4 id="什么是预读"><a href="#什么是预读" class="headerlink" title="什么是预读"></a>什么是预读</h4><p>磁盘读写，并不是按需读取，而是按页读取，<strong>一次至少读一页数据</strong>（一般是4K），如果未来要读取的数据就在页中，就能够省去后续的磁盘IO，提高效率。</p>
+<h4 id="预读为什么有效"><a href="#预读为什么有效" class="headerlink" title="预读为什么有效"></a>预读为什么有效</h4><p>数据访问，通常都遵循“集中读写”的原则，使用一些数据，大概率会使用附近的数据，这就是所谓的“<strong>局部性原理</strong>”，它表明提前加载是有效的，确实能够减少磁盘IO。</p>
+<h4 id="按页读取，和InnoDB缓冲池设计有啥关系"><a href="#按页读取，和InnoDB缓冲池设计有啥关系" class="headerlink" title="按页读取，和InnoDB缓冲池设计有啥关系"></a>按页读取，和InnoDB缓冲池设计有啥关系</h4><ol>
+<li>磁盘访问按页读取能够提高性能，所以缓冲池一般也是按页缓存数据；</li>
+<li>预读机制启示了我们，能把一些“可能要访问”的页提前加入缓冲池，避免未来的磁盘IO操作；</li>
+</ol>
+<h3 id="InnoDB是以什么算法，来管理这些缓冲页呢？"><a href="#InnoDB是以什么算法，来管理这些缓冲页呢？" class="headerlink" title="InnoDB是以什么算法，来管理这些缓冲页呢？"></a>InnoDB是以什么算法，来管理这些缓冲页呢？</h3><p>最容易想到的，就是LRU(Least recently used)。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">注意：memcache，OS都会用LRU来进行页置换管理，但MySQL的玩法并不一样。</span><br></pre></td></tr></table></figure>
+
+<h4 id="传统的LRU如何进行缓冲页管理"><a href="#传统的LRU如何进行缓冲页管理" class="headerlink" title="传统的LRU如何进行缓冲页管理"></a>传统的LRU如何进行缓冲页管理</h4><p>最常见的玩法是，把入缓冲池的页放到LRU的头部，作为最近访问的元素，从而最晚被淘汰。</p>
+<p>这里又分两种情况：</p>
+<ol>
+<li>页已经在缓冲池里，那就只做“移至”LRU头部的动作，而没有页被淘汰；</li>
+<li>页不在缓冲池里，除了做“放入”LRU头部的动作，还要做“淘汰”LRU尾部页的动作；</li>
+</ol>
+<p><img src="/2022/02/25/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%8E%9F%E7%90%86%E7%AF%87%E4%B9%8BBufferPool%E7%BC%93%E5%86%B2%E6%B1%A0/img.png"></p>
+<p>如上图，假如管理缓冲池的LRU长度为10，缓冲了页号为1，3，5…，40，7的页。</p>
+<p>假如，接下来要访问的数据在页号为4的页中：</p>
+<p><img src="/2022/02/25/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%8E%9F%E7%90%86%E7%AF%87%E4%B9%8BBufferPool%E7%BC%93%E5%86%B2%E6%B1%A0/img_1.png"></p>
+<ol>
+<li>页号为4的页，本来就在缓冲池里；</li>
+<li>把页号为4的页，放到LRU的头部即可，没有页被淘汰；</li>
+</ol>
+<p>假如，再接下来要访问的数据在页号为50的页中：</p>
+<p><img src="/2022/02/25/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%8E%9F%E7%90%86%E7%AF%87%E4%B9%8BBufferPool%E7%BC%93%E5%86%B2%E6%B1%A0/img_2.png"></p>
+<ol>
+<li>页号为50的页，原来不在缓冲池里；</li>
+<li>把页号为50的页，放到LRU头部，同时淘汰尾部页号为7的页；</li>
+</ol>
+<p>传统的LRU缓冲池算法十分直观，OS，memcache等很多软件都在用，MySQL为啥这么矫情，不能直接用呢？</p>
+<p>这里有两个问题：</p>
+<ol>
+<li>预读失效；</li>
+<li>缓冲池污染。</li>
+</ol>
+<h4 id="预读失效"><a href="#预读失效" class="headerlink" title="预读失效"></a>预读失效</h4><p>由于预读(Read-Ahead)，提前把页放入了缓冲池，但最终MySQL并没有从页中读取数据，称为预读失效。</p>
+<p><strong>如何对预读失效进行优化？</strong></p>
+<p>要优化预读失效，思路是：</p>
+<ol>
+<li>让预读失败的页，停留在缓冲池LRU里的时间尽可能短；</li>
+<li>让真正被读取的页，才挪到缓冲池LRU的头部；</li>
+</ol>
+<p>以保证，真正被读取的热数据留在缓冲池里的时间尽可能长。</p>
+<p>具体方法是：</p>
+<ol>
+<li>将LRU分为两个部分：<ul>
+<li>新生代(new sublist)</li>
+<li>老生代(old sublist)</li>
+</ul>
+</li>
+<li>新老生代收尾相连，即：新生代的尾(tail)连接着老生代的头(head)；</li>
+<li>新页（例如被预读的页）加入缓冲池时，只加入到老生代头部：<ul>
+<li>如果数据真正被读取（预读成功），才会加入到新生代的头部</li>
+<li>如果数据没有被读取，则会比新生代里的“热数据页”更早被淘汰出缓冲池</li>
+</ul>
+</li>
+</ol>
+<p><img src="/2022/02/25/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%8E%9F%E7%90%86%E7%AF%87%E4%B9%8BBufferPool%E7%BC%93%E5%86%B2%E6%B1%A0/img_3.png"></p>
+<p>举个例子，整个缓冲池LRU如上图：</p>
+<ol>
+<li>整个LRU长度是10；</li>
+<li>前70%是新生代；</li>
+<li>后30%是老生代；</li>
+<li>新老生代首尾相连</li>
+</ol>
+<p><img src="/2022/02/25/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%8E%9F%E7%90%86%E7%AF%87%E4%B9%8BBufferPool%E7%BC%93%E5%86%B2%E6%B1%A0/img_4.png"></p>
+<p>假如有一个页号为50的新页被预读加入缓冲池：</p>
+<ol>
+<li>50只会从老生代头部插入，老生代尾部（也是整体尾部）的页会被淘汰掉；</li>
+<li>假设50这一页不会被真正读取，即预读失败，它将比新生代的数据更早淘汰出缓冲池；</li>
+</ol>
+<p>假如50这一页立刻被读取到，例如SQL访问了页内的行row数据：</p>
+<ol>
+<li>它会被立刻加入到新生代的头部；</li>
+<li>新生代的页会被挤到老生代，此时并不会有页面被真正淘汰；</li>
+</ol>
+<p><strong>改进版缓冲池LRU能够很好的解决“预读失败”的问题</strong>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">但也不要因噎废食，因为害怕预读失败而取消预读策略，大部分情况下，局部性原理是成立的，预读是有效的。</span><br></pre></td></tr></table></figure>
+
+<p>新老生代改进版LRU仍然解决不了缓冲池污染的问题。</p>
+<h4 id="缓冲池污染"><a href="#缓冲池污染" class="headerlink" title="缓冲池污染"></a>缓冲池污染</h4><p>当某一个SQL语句，要<strong>批量扫描大量数据</strong>时，可能导致把缓冲池的所有页都替换出去，导致<strong>大量热数据被换出</strong>，MySQL性能急剧下降，这种情况叫缓冲池污染。</p>
+<p>例如，有一个数据量较大的用户表，当执行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from user where name like &quot;%shenjian%&quot;;</span><br></pre></td></tr></table></figure>
+<p>虽然结果集可能只有少量数据，但这类like不能命中索引，必须<strong>全表扫描</strong>，就需要访问大量的页：</p>
+<ol>
+<li>把页加到缓冲池（插入老生代头部）；</li>
+<li>从页里读出相关的row（插入新生代头部）；</li>
+<li>row里的name字段和字符串shenjian进行比较，如果符合条件，加入到结果集中；</li>
+<li>…直到扫描完所有页中的所有row…</li>
+</ol>
+<p>如此一来，<strong>所有的数据页都会被加载到新生代的头部，但只会访问一次，真正的热数据被大量换出</strong>。</p>
+<p><strong>怎么解决这类扫码大量数据导致的缓冲池污染问题呢？</strong></p>
+<p>MySQL缓冲池加入了一个“老生代停留时间窗口”的机制：</p>
+<ol>
+<li>假设T=老生代停留时间窗口；</li>
+<li>插入老生代头部的页，即使立刻被访问，并不会立刻放入新生代头部；</li>
+<li>只有满足“被访问”并且“在老生代停留时间”大于T，才会被放入新生代头部；</li>
+</ol>
+<h2 id="上述原理，对应InnoDB里哪些参数？"><a href="#上述原理，对应InnoDB里哪些参数？" class="headerlink" title="上述原理，对应InnoDB里哪些参数？"></a>上述原理，对应InnoDB里哪些参数？</h2><p><img src="/2022/02/25/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%8E%9F%E7%90%86%E7%AF%87%E4%B9%8BBufferPool%E7%BC%93%E5%86%B2%E6%B1%A0/img_5.png"></p>
+<h3 id="参数：innodb-buffer-pool-size"><a href="#参数：innodb-buffer-pool-size" class="headerlink" title="参数：innodb_buffer_pool_size"></a>参数：innodb_buffer_pool_size</h3><p>介绍：配置缓冲池的大小，在内存允许的情况下，DBA往往会建议调大这个参数，越多数据和索引放到内存里，数据库的性能会越好。</p>
+<h3 id="参数：innodb-old-blocks-pct"><a href="#参数：innodb-old-blocks-pct" class="headerlink" title="参数：innodb_old_blocks_pct"></a>参数：innodb_old_blocks_pct</h3><p>介绍：老生代占整个LRU链长度的比例，默认是37，即整个LRU中新生代与老生代长度比例是63:37。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">如果把这个参数设为100，就退化为普通LRU了。</span><br></pre></td></tr></table></figure>
+
+<h3 id="参数：innodb-old-blocks-time"><a href="#参数：innodb-old-blocks-time" class="headerlink" title="参数：innodb_old_blocks_time"></a>参数：innodb_old_blocks_time</h3><p>介绍：老生代停留时间窗口，单位是毫秒，默认是1000，即同时满足“被访问”与“在老生代停留时间超过1秒”两个条件，才会被插入到新生代头部。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ol>
+<li>缓冲池(buffer pool)是一种常见的<strong>降低磁盘访问</strong>的机制；</li>
+<li>缓冲池通常<strong>以页(page)为单位缓存数据</strong>；</li>
+<li>缓冲池的<strong>常见管理算法是LRU</strong>，memcache，OS，InnoDB都使用了这种算法；</li>
+<li>InnoDB对普通LRU进行了优化：<ul>
+<li>将缓冲池分为<strong>老生代和新生代</strong>，入缓冲池的页，优先进入老生代，页被访问，才进入新生代，以解决预读失效的问题</li>
+<li>页被访问，且在老生代<strong>停留时间超过配置阈值</strong>的，才进入新生代，以解决批量数据访问，大量热数据淘汰的问题</li>
+</ul>
+</li>
+</ol>
+</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MySQL/">MySQL</a><a class="post-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><a class="post-meta__tags" href="/tags/InnoDB/">InnoDB</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2022/03/06/Spring%E5%85%A8%E5%AE%B6%E6%A1%B6/%E5%88%9D%E8%AF%BBSpring%E7%9A%84Bean%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"><i class="fa fa-chevron-left">  </i><span>初读Spring的Bean生命周期</span></a></div><div class="next-post pull-right"><a href="/2022/02/25/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%8E%9F%E7%90%86%E7%AF%87%E4%B9%8B%E6%95%B0%E6%8D%AE%E9%A1%B5%E4%B8%8E%E7%B4%A2%E5%BC%95%E5%88%9D%E6%8E%A2/"><span>InnoDB原理篇之数据页与索引初探</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '83850031ee87c27765eb',
+  clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',
+  repo: 'blob-comment',
+  owner: 'hepeng0',
+  admin: 'hepeng0',
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN'
+})
+gitalk.render('gitalk-container')</script></div></div><footer><div class="layout" id="footer"><div class="copyright">&copy;2018 - 2022 By 何鹏 [smile.hepeng@qq.com]</div><div class="footer_custom_text">hitokoto</div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.9.0"></script><script src="/js/fancybox.js?version=1.9.0"></script><script src="/js/sidebar.js?version=1.9.0"></script><script src="/js/copy.js?version=1.9.0"></script><script src="/js/fireworks.js?version=1.9.0"></script><script src="/js/transition.js?version=1.9.0"></script><script src="/js/scroll.js?version=1.9.0"></script><script src="/js/head.js?version=1.9.0"></script><script src="/js/search/local-search.js"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+  $('#top-container').addClass('is-mobile')
+}</script><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">本地搜索</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章"></div></div></div><hr><div id="local-search-results"><div id="local-hits"></div><div id="local-stats"></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div></body></html>
