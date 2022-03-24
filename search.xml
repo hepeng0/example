@@ -4,6 +4,35 @@
   
     
     <entry>
+      <title>数据库MySQL系列之分区分片分库分表</title>
+      <link href="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/"/>
+      <url>/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/</url>
+      
+        <content type="html"><![CDATA[<p>数据库的数据量达到一定程度之后，为避免带来系统性能上的瓶颈， 往往需要进行数据的处理，最常采用的手段总结起来：</p><ul><li>分区</li><li>分片</li><li>分库</li><li>分表</li></ul><h2 id="表分区"><a href="#表分区" class="headerlink" title="表分区"></a>表分区</h2><h3 id="什么是表分区"><a href="#什么是表分区" class="headerlink" title="什么是表分区"></a>什么是表分区</h3><p>MySQL 数据库中的数据是以文件的形势存在磁盘上的，默认放在 /var/lib/mysql/ 目录下面，</p><p>我们可以通过 show variables like ‘%datadir%’; 命令来查看：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img.png"></p><p>我们进入到这个目录下，就可以看到我们定义的所有数据库了，一个数据库就是一个文件夹，一个库中，有其对应的表的信息，如下：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_1.png"></p><p>在 MySQL 中，如果存储引擎是 MyISAM，那么在 data 目录下会看到 3 类文件：.frm、.myi、.myd，作用如下：</p><ol><li><code>*.frm</code>：这个是表定义，是描述表结构的文件。</li><li><code>*.myd</code>：这个是数据信息文件，是表的数据文件。</li><li><code>*.myi</code>：这个是索引信息文件。</li></ol><p>如果存储引擎是 InnoDB, 那么在 data 目录下会看到两类文件：.frm、.ibd，作用分别如下：</p><ol><li><code>*.frm</code>：表结构文件。</li><li><code>*.ibd</code>：表数据和索引的文件。 </li></ol><p>无论是哪种存储引擎，只要一张表的数据量过大，就会导致 <em>.myd、</em>.myi 以及 *.ibd 文件过大，数据的查找就会变的很慢。</p><p>为了解决这个问题，我们可以利用 MySQL 的分区功能，在物理上将这一张表对应的文件，分割成许多小块，如此，当我们查找一条数据时，就不用在某一个文件中进行整个遍历了，我们只需要知道这条数据位于哪一个数据块，然后在那一个数据块上查找就行了；另一方面，如果一张表的数据量太大，可能一个磁盘放不下，这个时候，通过表分区我们就可以把数据分配到不同的磁盘里面去。</p><p>MySQL 从 5.1 开始添加了对分区的支持，分区的过程是将一个表或索引分解为多个更小、更可管理的部分。对于开发者而言，分区后的表使用方式和不分区基本上还是一模一样，只不过在物理存储上，原本该表只有一个数据文件，现在变成了多个，每个分区都是独立的对象，可以独自处理，也可以作为一个更大对象的一部分进行处理。</p><p>需要注意的是，分区功能<strong>并不是在存储引擎层完成</strong>的，常见的存储引擎如 InnoDB、MyISAM、NDB 等都支持分区。但并不是所有的存储引擎都支持，如 CSV、FEDORATED、MERGE 等就不支持分区，因此在使用此分区功能前，应该对选择的存储引擎对分区的支持有所了解。</p><h3 id="表分区两种方式"><a href="#表分区两种方式" class="headerlink" title="表分区两种方式"></a>表分区两种方式</h3><p>不同于 MyCat 中既可以垂直切分又可以水平切分，MySQL 数据库支持的分区类型为水平分区，它<strong>不支持垂直分区</strong>。</p><h4 id="水平切分"><a href="#水平切分" class="headerlink" title="水平切分"></a>水平切分</h4><p>将同一个表的数据进行分块保存到不同的数据库中，来解决单表中数据量增长出现的压力。这些数据库中的表结构完全相同。</p><p>先来一张简单的示意图，大家感受一下什么是水平切分：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_2.png"></p><p>假设我的 DB 中有 table-1、table-2 以及 table-3 三张表，水平切分就是拿着我 40 米大刀，对准黑色的线条，砍一剑或者砍 N 剑！</p><p>砍完之后，将砍掉的部分放到另外一个数据库实例中，变成下面这样：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_3.png"></p><p>这样，原本放在一个 DB 中的 table 现在放在两个 DB 中了，观察之后我们发现：</p><ul><li>两个 DB 中表的个数都是完整的，就是原来 DB 中有几张表，现在还是几张。 </li><li>每张表中的数据是不完整的，数据被拆分到了不同的 DB 中去了。</li></ul><p>这就是数据库的水平切分，也可以理解为<strong>按照数据行进行切分</strong>，即按照表中某个字段的某种规则来将表数据分散到多个库之中，每个表中包含一部分数据，即<strong>水平切分不改变表结构</strong>。</p><p>表结构设计水平切分，常见的一些场景包括：</p><ul><li>比如在线电子商务网站，订单表数据量过大，按照年度、月度水平切分</li><li>Web 2.0网站注册用户、在线活跃用户过多，按照用户ID范围等方式，将相关用户以及该用户紧密关联的表做水平切分</li><li>例如论坛的置顶帖子，因为涉及到分页问题，每页都需要显示置顶贴，这种情况可以把置顶贴水平切分开来，避免取置顶帖子时从所有帖子的表中读取</li></ul><h4 id="垂直切分"><a href="#垂直切分" class="headerlink" title="垂直切分"></a>垂直切分</h4><p>是指按功能模块拆分，以解决表与表之间的io竞争。比如分为订单库、商品库、用户库…这种方式多个数据库之间的表结构不同。</p><p>先来一张简单的示意图，大家感受一下垂直切分：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_4.png"></p><p>所谓的垂直切分就是拿着我 40 米大刀，对准了黑色的线条砍。</p><p>砍完之后，将不同的表放到不同的数据库实例中去，变成下面这个样子：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_5.png"><br><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_6.png"><br><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_7.png"></p><p>这个时候我们发现如下几个特点：</p><ul><li>每一个数据库实例中的表的数量都是不完整的。</li><li>每一个数据库实例中表的数据是完整的。</li></ul><p>这就是垂直切分。</p><p>一般来说，垂直切分我们可以按照业务来划分，不同业务的表放到不同的数据库实例中。</p><p>表结构设计垂直切分，常见的一些场景包括：</p><ul><li><strong>大字段的垂直切分</strong>。单独将大字段建在另外的表中，提高基础表的访问性能，原则上在性能关键的应用中应当避免数据库的大字段</li><li><strong>按照使用用途垂直切分</strong>。例如企业物料属性，可以按照基本属性、销售属性、采购属性、生产制造属性、财务会计属性等用途垂直切分</li><li><strong>按照访问频率垂直切分</strong>。例如电子商务、Web 2.0系统中，如果用户属性设置非常多，可以将基本、使用频繁的属性和不常用的属性垂直切分开</li></ul><h4 id="MySQL-数据库支持的分区类型为水平分区。"><a href="#MySQL-数据库支持的分区类型为水平分区。" class="headerlink" title="MySQL 数据库支持的分区类型为水平分区。"></a>MySQL 数据库支持的分区类型为水平分区。</h4><p>MySQL 数据库的分区是<strong>局部分区索引</strong>，即一个分区中既存放了数据又存放了索引。</p><p>目前，MySQL数据库还不支持全局分区（数据存放在各个分区中，但是所有数据的索引放在一个对象中）。</p><h3 id="为什么需要表分区"><a href="#为什么需要表分区" class="headerlink" title="为什么需要表分区"></a>为什么需要表分区</h3><ul><li>可以让单表存储更多的数据。</li><li>分区表的数据更容易维护，可以通过清除整个分区批量删除大量数据，也可以增加新的分区来支持新插入的数据。<br>另外，还可以对一个独立分区进行优化、检查、修复等操作。</li><li>部分查询能够从查询条件确定只落在少数分区上，查询速度会很快。</li><li>分区表的数据还可以分布在不同的物理设备上，从而高效利用多个硬件设备。</li><li>可以使用分区表来避免某些特殊瓶颈，例如 InnoDB 单个索引的互斥访问、ext3 文件系统的 inode 锁竞争。</li><li>可以备份和恢复单个分区。</li></ul><h4 id="分区的限制和缺点"><a href="#分区的限制和缺点" class="headerlink" title="分区的限制和缺点"></a>分区的限制和缺点</h4><ul><li>一个表最多只能有 1024 个分区。</li><li>如果分区字段中有主键或者唯一索引的列，那么所有主键列和唯一索引列都必须包含进来。</li><li>分区表无法使用外键约束。</li><li>NULL 值会使分区过滤无效。</li><li>所有分区必须使用相同的存储引擎。</li></ul><h3 id="分区实践"><a href="#分区实践" class="headerlink" title="分区实践"></a>分区实践</h3><p>说了这么多，来个例子看一下。</p><p>首先我们先来查看一下当前的 MySQL 是否支持分区。</p><p>在 MySQL5.6.1 之前可以通过命令 <code>show variables like &#39;%have_partitioning%&#39;</code> 来查看 MySQL 是否支持分区。如果 <code>have_partitioning</code> 的值为 <code>YES</code>，则表示支持分区。</p><p>从 MySQL5.6.1 开始，<code>have_partitioning</code> 参数已经被去掉了，而是用 <code>SHOW PLUGINS</code> 来代替。若有 <code>partition</code> 行且 <code>STATUS</code> 列的值为 <code>ACTIVE</code>，则表示支持分区，如下所示：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_8.png"></p><p>确认我们的 MySQL 支持分区后，我们就可以开始分区啦！</p><h4 id="RANGE-分区"><a href="#RANGE-分区" class="headerlink" title="RANGE 分区"></a>RANGE 分区</h4><p>RANGE 分区比较简单，就是根据某一个字段的值进行分区。 </p><p>不过这个字段有一个要求，就是<strong>必须是主键或者是联合主键中的某个字段</strong>。</p><p>例如根据 user 表的 id 进行分区：</p><ul><li>当 id 小于 100，数据插入 p0 分区；</li><li>当 id 大于等于 100 小于 200 的时候，插入 p1 分区；</li><li>如果 id 大于等于 200 则插入 p2 分区。</li></ul><p>上面的规则涉及到了 id 的所有范围了，如果没有第三条规则，那么插入一个 id 为 300 的记录时，就会报错。</p><p>建表 SQL 如下：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int primary key,</span><br><span class="line">  username varchar(255)</span><br><span class="line">)engine=innodb</span><br><span class="line">  partition by range(id)(</span><br><span class="line">     partition  p0  values  less  than(100),</span><br><span class="line">     partition  p1  values  less  than(200),</span><br><span class="line">     partition  p2  values  less  than maxvalue  </span><br><span class="line">);</span><br></pre></td></tr></table></figure><p>表创建成功后，我们进入到 <code>/var/lib/mysql/test08</code> 文件夹中，来看刚刚创建的表文件：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_9.png"></p><p>可以看到，此时的数据文件分为好几个了。</p><p>在 <code>information_schema.partitions</code> 表中，我们可以查看分区的详细信息：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_10.png"></p><p>也可以自己写个 SQL 去查询：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from information_schema.partitions where table_schema=&#x27;test08&#x27; and table_name=&#x27;user&#x27;</span><br></pre></td></tr></table></figure><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_11.png"></p><p>每一行展示一个分区的信息，包括分区的方式、该区的范围、分区的字段、该区目前有几条记录等等。</p><p>RANGE 分区有一个比较典型的使用场景，就是按照日期对表进行分区，例如同一年注册的用户放在一个分区中，如下：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  createDate date,</span><br><span class="line">  primary key (id,createDate)</span><br><span class="line">)engine=innodb</span><br><span class="line">  partition by range(year(createDate))(</span><br><span class="line">     partition  p2022  values  less  than(2023),</span><br><span class="line">     partition  p2023  values  less  than(2024),</span><br><span class="line">     partition  p2024  values  less  than(2025)  </span><br><span class="line">);</span><br></pre></td></tr></table></figure><p>注意，<code>createDate</code> 是联合主键的一员。如果 <code>createDate</code> 不是主键，只是一个普通字段，那么创建时就会抛出如下错误：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_12.png"></p><p>现在，如果我们要查询 2022 年注册的用户，系统就只会去搜索 p2022 这个分区，通过 explain 执行计划可以证实我们的想法：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_13.png"></p><p>如果想要删除 2022 年注册的用户，则只需要删除该分区即可：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table user drop partition p2022;</span><br></pre></td></tr></table></figure><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_14.png"></p><p>由上图可以看到，删除之后，数据就没了。</p><h4 id="LIST-分区"><a href="#LIST-分区" class="headerlink" title="LIST 分区"></a>LIST 分区</h4><p>LIST 分区和 RANGE 分区类似，区别在于 LIST 分区是基于列值匹配一个离散值集合中的某个值来进行选择，而非连续的。举个例子大家看下就明白了：</p><p>假设我有一个用户表，用户有性别，现在想按照性别将用户分开存储，男性存储在一个分区中，女性存储在一个分区中，SQL 如下：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  primary key(id, gender)</span><br><span class="line">)engine=innodb</span><br><span class="line">  partition by list(gender)(</span><br><span class="line">     partition  man  values  in  (1),</span><br><span class="line">     partition  woman  values  in  (0));</span><br></pre></td></tr></table></figure><p>这个表将来就两个分区，分别存储男性和女性，gender 的取值为 1 或者 0，gender 如果取其他值，执行就会出错，最终执行结果如下：</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_15.png"></p><p>这样分区之后，将来查询男性或者查询女性效率都会比较高，删除某一性别的用户时删除效率也高。</p><h4 id="HASH-分区"><a href="#HASH-分区" class="headerlink" title="HASH 分区"></a>HASH 分区</h4><p>HASH 分区的目的是将数据均匀地分布到预先定义的各个分区中，保证各分区的数据量大致都是一样的。</p><p>在 RANGE 和 LIST 分区中，必须明确指定一个给定的列值或列值集合应该保存在哪个分区中；而在 HASH 分区中，MySQL 自动完成这些工作，用户所要做的只是基于将要进行哈希分区的列指定一个表达式，并且分区的数量。</p><ul><li>使用 HASH 分区来分割一个表，要在 CREATE TABLE 语句上添加 PARTITION BY HASH (expr)，其中 expr 是一个<strong>字段或者是一个返回整数的表达式</strong>；</li><li>通过 PARTITIONS 属性指定分区的数量，如果没有指定，那么<strong>分区的数量默认为 1</strong>，</li><li>HASH 分区不能删除分区，所以<strong>不能使用 DROP PARTITION 操作进行分区删除</strong>操作。</li></ul><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  primary key(id, gender)</span><br><span class="line">)engine=innodb partition by hash(id) partitions 4;</span><br></pre></td></tr></table></figure><h4 id="KEY-分区"><a href="#KEY-分区" class="headerlink" title="KEY 分区"></a>KEY 分区</h4><p>KEY 分区和 HASH 分区相似，但是 KEY 分区支持除 text 和 BLOB 之外的所有数据类型的分区，而 HASH 分区只支持数字分区。</p><p>KEY 分区不允许使用用户自定义的表达式进行分区，KEY 分区使用系统提供的 HASH 函数进行分区。</p><p>当表中存在主键或者唯一索引时，如果创建 KEY 分区时没有指定字段系统默认会<strong>首选主键列作为分区字段</strong>,如果不存在主键列会选择<strong>非空唯一索引列</strong>作为分区字段。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  primary key(id, gender)</span><br><span class="line">)engine=innodb partition by key(id) partitions 4;</span><br></pre></td></tr></table></figure><h4 id="COLUMNS-分区"><a href="#COLUMNS-分区" class="headerlink" title="COLUMNS 分区"></a>COLUMNS 分区</h4><p>COLUMN 分区是 5.5 开始引入的分区功能，只有 RANGE COLUMN 和 LIST COLUMN 这两种分区；支持整形、日期、字符串；这种分区方式和 RANGE、LIST 的分区方式非常的相似。</p><p>COLUMNS Vs RANGE Vs LIST 分区：</p><ul><li>针对日期字段的分区不需要再使用函数进行转换了。</li><li>COLUMN 分区支持多个字段作为分区键但是不支持表达式作为分区键。</li></ul><p>COLUMNS 支持的类型</p><ul><li>整形支持：tinyint、smallint、mediumint、int、bigint；不支持 decimal 和 float。</li><li>时间类型支持：date、datetime。</li><li>字符类型支持：char、varchar、binary、varbinary；不支持text、blob。</li></ul><p>举个例子看下：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  createDate date,</span><br><span class="line">  primary key(id, createDate)</span><br><span class="line">)engine=innodb PARTITION BY RANGE COLUMNS(createDate) (</span><br><span class="line">    PARTITION p0 VALUES LESS THAN (&#x27;1990-01-01&#x27;),</span><br><span class="line">    PARTITION p1 VALUES LESS THAN (&#x27;2000-01-01&#x27;),</span><br><span class="line">    PARTITION p2 VALUES LESS THAN (&#x27;2010-01-01&#x27;),</span><br><span class="line">    PARTITION p3 VALUES LESS THAN (&#x27;2020-01-01&#x27;),</span><br><span class="line">    PARTITION p4 VALUES LESS THAN MAXVALUE</span><br><span class="line">);</span><br></pre></td></tr></table></figure><p>这是 RANGE COLUMNS，分区值是连续的。</p><p>再来看 LIST COLUMNS 分区，这个就类似于枚举了：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  createDate date,</span><br><span class="line">  primary key(id, createDate)</span><br><span class="line">)engine=innodb PARTITION BY LIST COLUMNS(createDate) (</span><br><span class="line">    PARTITION p0 VALUES IN (&#x27;1990-01-01&#x27;),</span><br><span class="line">    PARTITION p1 VALUES IN (&#x27;2000-01-01&#x27;),</span><br><span class="line">    PARTITION p2 VALUES IN (&#x27;2010-01-01&#x27;),</span><br><span class="line">    PARTITION p3 VALUES IN (&#x27;2020-01-01&#x27;)</span><br><span class="line">);</span><br></pre></td></tr></table></figure><h3 id="常见分区命令"><a href="#常见分区命令" class="headerlink" title="常见分区命令"></a>常见分区命令</h3><h4 id="添加分区"><a href="#添加分区" class="headerlink" title="添加分区"></a>添加分区</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">alter table user add partition (partition p3 values less than (4000)); -- range 分区</span><br><span class="line">alter table user add partition (partition p3 values in (40));  -- lists分区</span><br></pre></td></tr></table></figure><h4 id="删除表分区（会删除数据）"><a href="#删除表分区（会删除数据）" class="headerlink" title="删除表分区（会删除数据）"></a>删除表分区（会删除数据）</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table user drop partition p30;</span><br></pre></td></tr></table></figure><h4 id="除表的所有分区（不会丢失数据）："><a href="#除表的所有分区（不会丢失数据）：" class="headerlink" title="除表的所有分区（不会丢失数据）："></a>除表的所有分区（不会丢失数据）：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table user remove partitioning; </span><br></pre></td></tr></table></figure><h4 id="重新定义-range-分区表（不会丢失数据）："><a href="#重新定义-range-分区表（不会丢失数据）：" class="headerlink" title="重新定义 range 分区表（不会丢失数据）："></a>重新定义 range 分区表（不会丢失数据）：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">alter table user partition by range(salary)(</span><br><span class="line">partition p1 values less than (2000),</span><br><span class="line">partition p2 values less than (4000)); </span><br></pre></td></tr></table></figure><h4 id="重新定义-hash-分区表（不会丢失数据）："><a href="#重新定义-hash-分区表（不会丢失数据）：" class="headerlink" title="重新定义 hash 分区表（不会丢失数据）："></a>重新定义 hash 分区表（不会丢失数据）：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table user partition by hash(salary) partitions 7; </span><br></pre></td></tr></table></figure><h4 id="合并分区：把-2-个分区合并为一个，不会丢失数据："><a href="#合并分区：把-2-个分区合并为一个，不会丢失数据：" class="headerlink" title="合并分区：把 2 个分区合并为一个，不会丢失数据："></a>合并分区：把 2 个分区合并为一个，不会丢失数据：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table user  reorganize partition p1,p2 into (partition p1 values less than (1000));</span><br></pre></td></tr></table></figure><h2 id="分片"><a href="#分片" class="headerlink" title="分片"></a>分片</h2><p>分片是把数据库横向扩展（Scale Out）到多个物理节点上的一种有效的方式，其主要目的是为突破单节点数据库服务器的 I/O 能力限制，解决数据库扩展性问题。</p><p>Shard这个词的意思是“碎片”。</p><p>如果将一个数据库当作一块大玻璃，将这块玻璃打碎，那么每一小块都称为数据库的碎片（DatabaseShard）。</p><p>将整个数据库打碎的过程就叫做分片，可以翻译为分片。</p><p>形式上，分片可以简单定义为将大数据库分布到多个物理节点上的一个分区方案。</p><p>每一个分区包含数据库的某一部分，称为一个片，分区方式可以是任意的，并不局限于传统的水平分区和垂直分区。</p><p>一个分片可以包含多个表的内容甚至可以包含多个数据库实例中的内容。</p><p>每个分片被放置在一个数据库服务器上，一个数据库服务器可以处理一个或多个分片的数据。</p><p>系统中需要有服务器进行查询路由转发，负责将查询转发到包含该查询所访问数据的分片或分片集合节点上去执行。</p><h2 id="分表和分区"><a href="#分表和分区" class="headerlink" title="分表和分区"></a>分表和分区</h2><p>分表从表面意思说就是把一张表分成多个小表，分区则是把一张表的数据分成N多个区块，这些区块可以在同一个磁盘上，也可以在不同的磁盘上。</p><p>分表和分区的区别</p><ol><li>实现方式上</li></ol><p>  mysql的分表是真正的分表，一张表分成很多表后，每一个小表都是完正的一张表，都对应三个文件（MyISAM引擎：一个.MYD数据文件，.MYI索引文件，.frm表结构文件）。</p><ol start="2"><li>数据处理上</li></ol><p>  分表后数据都是存放在分表里，总表只是一个外壳，存取数据发生在一个一个的分表里面。分区则不存在分表的概念，分区只不过把存放数据的文件分成了许多小块，分区后的表还是一张表，数据处理还是由自己来完成。</p><ol start="3"><li>提高性能上</li></ol><p>  分表后，单表的并发能力提高了，磁盘I/O性能也提高了。分区突破了磁盘I/O瓶颈，想提高磁盘的读写能力，来增加mysql性能。</p><p>  在这一点上，分区和分表的测重点不同，分表重点是存取数据时，如何提高mysql并发能力上；而分区呢，如何突破磁盘的读写能力，从而达到提高mysql性能的目的。</p><ol start="4"><li>实现的难易度上</li></ol><p>  分表的方法有很多，用merge来分表，是最简单的一种方式。这种方式和分区难易度差不多，并且对程序代码来说可以做到透明的。如果是用其他分表方式就比分区麻烦了。分区实现是比较简单的，建立分区表，跟建平常的表没什么区别，并且对代码端来说是透明的。</p><p>分区的适用场景: </p><ol><li>一张表的查询速度已经慢到影响使用的时候。</li><li>表中的数据是分段的</li><li>对数据的操作往往只涉及一部分数据，而不是所有的数据</li></ol><p>分表的适用场景:</p><ol><li>一张表的查询速度已经慢到影响使用的时候。</li><li>当频繁插入或者联合查询时，速度变慢。</li><li>分表的实现需要业务结合实现和迁移，较为复杂。</li></ol><h2 id="分表与分库"><a href="#分表与分库" class="headerlink" title="分表与分库"></a>分表与分库</h2><p>分表能够解决单表数据量过大带来的查询效率下降的问题，但是，却无法给数据库的并发处理能力带来质的提升。</p><p>面对高并发的读写访问，当数据库master服务器无法承载写操作压力时，不管如何扩展slave服务器，此时都没有意义了。</p><p>因此，我们必须换一种思路，对数据库进行拆分，从而提高数据库写入能力，这就是所谓的分库。</p><p>与分表策略相似，分库可以采用通过一个关键字取模的方式，来对数据访问进行路由，如下图所示</p><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_16.png"></p><h2 id="分区与分片"><a href="#分区与分片" class="headerlink" title="分区与分片"></a>分区与分片</h2><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_17.png"></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> MySQL </tag>
+            
+            <tag> 数据库 </tag>
+            
+            <tag> InnoDB </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Redis初探之常见问题汇总</title>
       <link href="/2022/03/09/%E4%B8%AD%E9%97%B4%E4%BB%B6/Cache/Redis/Redis%E5%88%9D%E6%8E%A2%E4%B9%8B%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/"/>
       <url>/2022/03/09/%E4%B8%AD%E9%97%B4%E4%BB%B6/Cache/Redis/Redis%E5%88%9D%E6%8E%A2%E4%B9%8B%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</url>
@@ -76,9 +105,9 @@
             
             <tag> 分布式 </tag>
             
-            <tag> 主从同步 </tag>
-            
             <tag> 设计理念 </tag>
+            
+            <tag> 主从同步 </tag>
             
         </tags>
       
@@ -292,33 +321,6 @@
     
     
     <entry>
-      <title>JAVA并发编程之这个&quot;破玩意儿&quot;叫锁</title>
-      <link href="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/"/>
-      <url>/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/</url>
-      
-        <content type="html"><![CDATA[<p>说明： 转载自<a href="https://mp.weixin.qq.com/s/PL-oTc5J_pe5Oyb8mdltjQ">中间件兴趣圈-你管这“破玩意儿”叫锁</a></p><h2 id="锁的种类"><a href="#锁的种类" class="headerlink" title="锁的种类"></a>锁的种类</h2><p>首先以一个非常常见的生活场景举例，例如一个三口之家居住在一个二房一厅的房子里，只有一个卫生间，早上一起床，大家都有抢卫生间，这里就会发生： 一人在如厕，其他人排队等待的场景。</p><p>这个场景下有如下几个关键的特征：</p><ul><li>独占 “厕所“作为一个资源，在任意时刻只能被一个人占用，为了实现该效果，使用资源之前，需要先获得与该资源关联的锁</li><li>当多个线程都需要访问该资源时，必须先获得锁，而且在同一时刻有且只会有一个线程获得锁，那没有获得锁的线程就需要排队等待。是一直等，还是等得不耐烦时就放弃？</li><li>当有多人排队时，一个线程将锁释放后，交给谁？什么样的策略？</li></ul><p>上面是最常见的锁应用场景，有一个非常响亮的名称：<strong>互斥锁、排它锁</strong>。</p><h3 id="互斥锁"><a href="#互斥锁" class="headerlink" title="互斥锁"></a>互斥锁</h3><p>在java领域中，实现互斥锁通常有两种方式：</p><ul><li>synchronized</li><li>ReentrantLock</li></ul><p>互斥锁的基本语义：</p><table><thead><tr><th>语义</th><th>说明</th><th>ReentrantLock</th><th>synchronized</th></tr></thead><tbody><tr><td>可重入性</td><td>一个线程获取锁后，没有释放之前，继续申请</td><td>支持</td><td>支持</td></tr><tr><td>锁只能被锁的拥有者释放</td><td><strong>基于redis实现分布式锁时，要特别注意这个特质</strong></td><td>——</td><td>——</td></tr><tr><td>中断</td><td>申请锁时是否支持被中断</td><td>调用lockInterruptibly方法，可以支持线程中断，即停止继续申请锁</td><td>不支持</td></tr><tr><td>公平锁或非公平锁</td><td>当拥有锁的线程释放锁后，锁的下一个获取者就是锁等待队列中的第一个元素</td><td>支持</td><td>不支持</td></tr></tbody></table><h3 id="共享锁"><a href="#共享锁" class="headerlink" title="共享锁"></a>共享锁</h3><p>与互斥锁相对应的是共享锁，所谓的共享锁是<strong>同一时间可以被多个线程共同申请</strong>，一个非常经典的使用场景就是<strong>读写锁</strong>。</p><p>例如在一个缓存场景，在一个商品系统中，为了提供对商品的访问性能，通常会引入一个缓存区(Map)来缓存商品的数据，缓存数据对查询请求(读请求)是可以并行执行的，即多个线程同时查询缓存区的数据，这个是一个非常安全的操作，但不允许多个线程对缓存区进行修改。这里共享锁的意义就发挥出来了。</p><p>既然多个线程对缓存区可以同时进行读操作，那为什么还要加共享锁呢？主要的目的是<strong>避免写操作与读操作同时进行</strong>。</p><p>只要当前有读操作在进行，写操作就需要排队，请看如下示例图：<br><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img.png"><br>如上图所示：例如 线程T1,T2,T3连续申请共享锁，然后T4申请写锁，再T5申请读锁，那各个线程的并发执行情况如下所示：</p><ul><li>线程 T1、T2、T3 将并发执行</li><li>T4由于是申请的写锁，必须等 T1、T2、T3释放锁后，才能执行。</li><li>T5虽然申请是共享锁，但由于T4持有写锁，故T5也需要阻塞，直至T4释放锁。</li></ul><p>在Java等世界中按<strong>锁的排斥性</strong>来分基本就包含<strong>排它锁与共享锁</strong>，其他读写锁、间隙锁等是以锁的粒度这个纬度进行细分。</p><h2 id="锁的实现原理"><a href="#锁的实现原理" class="headerlink" title="锁的实现原理"></a>锁的实现原理</h2><p>从某种意义上来说，锁的实现原理就是两个队列：<strong>同步阻塞队列、条件等待队列</strong>。</p><h3 id="同步阻塞队列"><a href="#同步阻塞队列" class="headerlink" title="同步阻塞队列"></a>同步阻塞队列</h3><p>阻塞队列的作用说明如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_1.png"></p><p>上面使用synchronized，其传入的是一个锁对象，如果此时有5个线程同时去执行这段代码，由于锁的互斥性，同一时间只有一个线程能获得锁，<strong>其他线程需要排队等待</strong>，故需要引入一个队列来存储在这些排队的线程，所以<strong>synchronized的实现机制中，会在锁对象中开辟一个队列，用来存储等待获取当前锁的线程</strong>。</p><h3 id="条件等待队列"><a href="#条件等待队列" class="headerlink" title="条件等待队列"></a>条件等待队列</h3><p>Object对象中有一对特殊的方法：wait()/notify()/notifyAll()，消费者/生产者中示例中，使用过wait,notify方法，示例代码如下：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_2.png"></p><p>wait方法必须在synchronized中调用，并且通常是<strong>线程调用锁对象的wait方法</strong>，表示当前继续往下执行的条件不足，当前线程需要等待，故需要为锁对象再维护一个个队列，用来存储等待的线程，俗称条件等待队列。</p><p>当其他线程调用锁对象的notify方法或notifyAll方法，会唤醒等待队列中的线程。</p><pre><code>温馨提示： Object.wait方法，会使当前线程进入等待状态，并且释放锁。通常条件等待会使用while语句，避免条件不满足时被误唤醒，故使用while对条件进行再一次的判断。当被唤醒后，并不立即去执行while条件判断，而是需要重新去申请锁，即可能会进入到阻塞队列。</code></pre><h2 id="锁的优化思路"><a href="#锁的优化思路" class="headerlink" title="锁的优化思路"></a>锁的优化思路</h2><p>大家都对锁很敏感，因为性能低下，但锁肯定有其存在的原因，主要解决<strong>数据访问的安全性</strong></p><p>大家可能会感到惊讶，作为一款高性能的消息中间件(RocketMQ)，在消息写入时也使用了锁，其代码如下:</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_3.png"></p><p>这是因为RocketMQ是顺序写文件，多个请求同时申请写一个文件，必须排队执行，否则会带来逻辑异常，此时锁是不用不行了。</p><p>对锁的优化策略，通常基于如下原则：</p><ul><li>能不用锁就不使用锁，</li><li>必须使用锁则尽量保证被锁包裹代码的快速执行</li><li>降低锁的粒度。</li></ul><h3 id="优化锁执行时间"><a href="#优化锁执行时间" class="headerlink" title="优化锁执行时间"></a>优化锁执行时间</h3><p>当然能不用锁就不用锁，但有些场景是必须使用锁来保证多线程环境下结果的正确性。</p><p>就以RocketMQ顺序写commitlog文件为例，对同一个文件写入，需要记录当前的写入位置，然后另外一个线程就进行追加，故这个为写入位置是多线程不安全的，故必须引入锁。</p><p>那RocketMQ作为一款高性能的消息中间件，是如何做到消息发送的高并发，低延迟能力低呢？</p><p>核心法宝：<strong>控制锁的范围，确保被锁包含的代码执行性能高效</strong>，接下来我们看一下RocketMQ消息写入的几个重要步骤：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_4.png"></p><p>并不是需要将上述三个步骤都加锁，而是只对写内存这段加锁即可，这段代码非常高效。</p><h3 id="优化锁的粒度"><a href="#优化锁的粒度" class="headerlink" title="优化锁的粒度"></a>优化锁的粒度</h3><p>锁的性能优化是一个永恒的主旨，另外一个核心思路是：<strong>降低锁的粒度，提高并发度</strong>。</p><p>接下来我们以JDK中的HashTable与ConcurrentHashMap的实现原理为例，让大家体会一下如何降低锁的粒度从而提高并发度。</p><p>Hashtable的性能低下是众所周知，因为整个容器就一把锁，因为它的get、put都是被synchronized修饰，synchronized用来修饰非static方法，其锁对象为Hashtable是对象锁。</p><ul><li>并发度：同一时间只有一个线程能向该容器添加数据、获取数据。</li></ul><p>而jkd1.7及其版本，ConcurrentHashMap的内部数据结构如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_5.png"></p><p>可以看出ConcurrentHashMap的设计思路是将整个HashMap分割成多个小的HashMap，然后为每一个HashMap加锁，从而降低锁的粒度，从而提高并发度。</p><p>在JDK1.8及版本后，ConcurrentHashMap的存储结构又发了很大改变，摒弃分段思想，使用来数组 + Node ，进一步释放读写的并发度，其数据结构如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_6.png"></p><p>其中，对每一个链表的Node节点，写操作时会加锁，但在查询时候，并不会对各个Node加锁，提高读操作的并发度；并且会基于CAS机制实现无锁化处理，使用volatile保证可见性。</p><h3 id="无锁化设计"><a href="#无锁化设计" class="headerlink" title="无锁化设计"></a>无锁化设计</h3><p>锁的存在必然有其使用场景，特别是需要<strong>被锁保护的资源众多</strong>，即临界区中的逻辑复杂，对其进行拆分会使代码变的臃肿，直接使用锁保护会清晰明了，但评估是否需要引入锁时需要慎重，特别是一些对吞吐量有极高要求的场景，能不用锁就不要用锁.</p><p><strong>无锁化设计的基础：CAS，比较和交换。</strong></p><p>在Java领域也提供了对应的原子操作工具：CAS</p><p>CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。</p><ul><li>如果内存位置的值与预期原值相匹配，那么处理器会自动将该位置值更新为新值 。</li><li>否则，处理器不做任何操作。</li><li>*CAS是CPU指令级命令**。</li></ul><p>CAS简单使用示例如下：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_7.png"></p>]]></content>
-      
-      
-      <categories>
-          
-          <category> 并发 </category>
-          
-      </categories>
-      
-      
-        <tags>
-            
-            <tag> 并发 </tag>
-            
-            <tag> 锁 </tag>
-            
-        </tags>
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>JAVA并发编程之线程安全及解决方案大纲</title>
       <link href="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E5%A4%A7%E7%BA%B2/"/>
       <url>/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E5%A4%A7%E7%BA%B2/</url>
@@ -335,9 +337,36 @@
       
         <tags>
             
+            <tag> 锁 </tag>
+            
             <tag> 并发 </tag>
             
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>JAVA并发编程之这个&quot;破玩意儿&quot;叫锁</title>
+      <link href="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/"/>
+      <url>/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/</url>
+      
+        <content type="html"><![CDATA[<p>说明： 转载自<a href="https://mp.weixin.qq.com/s/PL-oTc5J_pe5Oyb8mdltjQ">中间件兴趣圈-你管这“破玩意儿”叫锁</a></p><h2 id="锁的种类"><a href="#锁的种类" class="headerlink" title="锁的种类"></a>锁的种类</h2><p>首先以一个非常常见的生活场景举例，例如一个三口之家居住在一个二房一厅的房子里，只有一个卫生间，早上一起床，大家都有抢卫生间，这里就会发生： 一人在如厕，其他人排队等待的场景。</p><p>这个场景下有如下几个关键的特征：</p><ul><li>独占 “厕所“作为一个资源，在任意时刻只能被一个人占用，为了实现该效果，使用资源之前，需要先获得与该资源关联的锁</li><li>当多个线程都需要访问该资源时，必须先获得锁，而且在同一时刻有且只会有一个线程获得锁，那没有获得锁的线程就需要排队等待。是一直等，还是等得不耐烦时就放弃？</li><li>当有多人排队时，一个线程将锁释放后，交给谁？什么样的策略？</li></ul><p>上面是最常见的锁应用场景，有一个非常响亮的名称：<strong>互斥锁、排它锁</strong>。</p><h3 id="互斥锁"><a href="#互斥锁" class="headerlink" title="互斥锁"></a>互斥锁</h3><p>在java领域中，实现互斥锁通常有两种方式：</p><ul><li>synchronized</li><li>ReentrantLock</li></ul><p>互斥锁的基本语义：</p><table><thead><tr><th>语义</th><th>说明</th><th>ReentrantLock</th><th>synchronized</th></tr></thead><tbody><tr><td>可重入性</td><td>一个线程获取锁后，没有释放之前，继续申请</td><td>支持</td><td>支持</td></tr><tr><td>锁只能被锁的拥有者释放</td><td><strong>基于redis实现分布式锁时，要特别注意这个特质</strong></td><td>——</td><td>——</td></tr><tr><td>中断</td><td>申请锁时是否支持被中断</td><td>调用lockInterruptibly方法，可以支持线程中断，即停止继续申请锁</td><td>不支持</td></tr><tr><td>公平锁或非公平锁</td><td>当拥有锁的线程释放锁后，锁的下一个获取者就是锁等待队列中的第一个元素</td><td>支持</td><td>不支持</td></tr></tbody></table><h3 id="共享锁"><a href="#共享锁" class="headerlink" title="共享锁"></a>共享锁</h3><p>与互斥锁相对应的是共享锁，所谓的共享锁是<strong>同一时间可以被多个线程共同申请</strong>，一个非常经典的使用场景就是<strong>读写锁</strong>。</p><p>例如在一个缓存场景，在一个商品系统中，为了提供对商品的访问性能，通常会引入一个缓存区(Map)来缓存商品的数据，缓存数据对查询请求(读请求)是可以并行执行的，即多个线程同时查询缓存区的数据，这个是一个非常安全的操作，但不允许多个线程对缓存区进行修改。这里共享锁的意义就发挥出来了。</p><p>既然多个线程对缓存区可以同时进行读操作，那为什么还要加共享锁呢？主要的目的是<strong>避免写操作与读操作同时进行</strong>。</p><p>只要当前有读操作在进行，写操作就需要排队，请看如下示例图：<br><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img.png"><br>如上图所示：例如 线程T1,T2,T3连续申请共享锁，然后T4申请写锁，再T5申请读锁，那各个线程的并发执行情况如下所示：</p><ul><li>线程 T1、T2、T3 将并发执行</li><li>T4由于是申请的写锁，必须等 T1、T2、T3释放锁后，才能执行。</li><li>T5虽然申请是共享锁，但由于T4持有写锁，故T5也需要阻塞，直至T4释放锁。</li></ul><p>在Java等世界中按<strong>锁的排斥性</strong>来分基本就包含<strong>排它锁与共享锁</strong>，其他读写锁、间隙锁等是以锁的粒度这个纬度进行细分。</p><h2 id="锁的实现原理"><a href="#锁的实现原理" class="headerlink" title="锁的实现原理"></a>锁的实现原理</h2><p>从某种意义上来说，锁的实现原理就是两个队列：<strong>同步阻塞队列、条件等待队列</strong>。</p><h3 id="同步阻塞队列"><a href="#同步阻塞队列" class="headerlink" title="同步阻塞队列"></a>同步阻塞队列</h3><p>阻塞队列的作用说明如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_1.png"></p><p>上面使用synchronized，其传入的是一个锁对象，如果此时有5个线程同时去执行这段代码，由于锁的互斥性，同一时间只有一个线程能获得锁，<strong>其他线程需要排队等待</strong>，故需要引入一个队列来存储在这些排队的线程，所以<strong>synchronized的实现机制中，会在锁对象中开辟一个队列，用来存储等待获取当前锁的线程</strong>。</p><h3 id="条件等待队列"><a href="#条件等待队列" class="headerlink" title="条件等待队列"></a>条件等待队列</h3><p>Object对象中有一对特殊的方法：wait()/notify()/notifyAll()，消费者/生产者中示例中，使用过wait,notify方法，示例代码如下：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_2.png"></p><p>wait方法必须在synchronized中调用，并且通常是<strong>线程调用锁对象的wait方法</strong>，表示当前继续往下执行的条件不足，当前线程需要等待，故需要为锁对象再维护一个个队列，用来存储等待的线程，俗称条件等待队列。</p><p>当其他线程调用锁对象的notify方法或notifyAll方法，会唤醒等待队列中的线程。</p><pre><code>温馨提示： Object.wait方法，会使当前线程进入等待状态，并且释放锁。通常条件等待会使用while语句，避免条件不满足时被误唤醒，故使用while对条件进行再一次的判断。当被唤醒后，并不立即去执行while条件判断，而是需要重新去申请锁，即可能会进入到阻塞队列。</code></pre><h2 id="锁的优化思路"><a href="#锁的优化思路" class="headerlink" title="锁的优化思路"></a>锁的优化思路</h2><p>大家都对锁很敏感，因为性能低下，但锁肯定有其存在的原因，主要解决<strong>数据访问的安全性</strong></p><p>大家可能会感到惊讶，作为一款高性能的消息中间件(RocketMQ)，在消息写入时也使用了锁，其代码如下:</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_3.png"></p><p>这是因为RocketMQ是顺序写文件，多个请求同时申请写一个文件，必须排队执行，否则会带来逻辑异常，此时锁是不用不行了。</p><p>对锁的优化策略，通常基于如下原则：</p><ul><li>能不用锁就不使用锁，</li><li>必须使用锁则尽量保证被锁包裹代码的快速执行</li><li>降低锁的粒度。</li></ul><h3 id="优化锁执行时间"><a href="#优化锁执行时间" class="headerlink" title="优化锁执行时间"></a>优化锁执行时间</h3><p>当然能不用锁就不用锁，但有些场景是必须使用锁来保证多线程环境下结果的正确性。</p><p>就以RocketMQ顺序写commitlog文件为例，对同一个文件写入，需要记录当前的写入位置，然后另外一个线程就进行追加，故这个为写入位置是多线程不安全的，故必须引入锁。</p><p>那RocketMQ作为一款高性能的消息中间件，是如何做到消息发送的高并发，低延迟能力低呢？</p><p>核心法宝：<strong>控制锁的范围，确保被锁包含的代码执行性能高效</strong>，接下来我们看一下RocketMQ消息写入的几个重要步骤：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_4.png"></p><p>并不是需要将上述三个步骤都加锁，而是只对写内存这段加锁即可，这段代码非常高效。</p><h3 id="优化锁的粒度"><a href="#优化锁的粒度" class="headerlink" title="优化锁的粒度"></a>优化锁的粒度</h3><p>锁的性能优化是一个永恒的主旨，另外一个核心思路是：<strong>降低锁的粒度，提高并发度</strong>。</p><p>接下来我们以JDK中的HashTable与ConcurrentHashMap的实现原理为例，让大家体会一下如何降低锁的粒度从而提高并发度。</p><p>Hashtable的性能低下是众所周知，因为整个容器就一把锁，因为它的get、put都是被synchronized修饰，synchronized用来修饰非static方法，其锁对象为Hashtable是对象锁。</p><ul><li>并发度：同一时间只有一个线程能向该容器添加数据、获取数据。</li></ul><p>而jkd1.7及其版本，ConcurrentHashMap的内部数据结构如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_5.png"></p><p>可以看出ConcurrentHashMap的设计思路是将整个HashMap分割成多个小的HashMap，然后为每一个HashMap加锁，从而降低锁的粒度，从而提高并发度。</p><p>在JDK1.8及版本后，ConcurrentHashMap的存储结构又发了很大改变，摒弃分段思想，使用来数组 + Node ，进一步释放读写的并发度，其数据结构如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_6.png"></p><p>其中，对每一个链表的Node节点，写操作时会加锁，但在查询时候，并不会对各个Node加锁，提高读操作的并发度；并且会基于CAS机制实现无锁化处理，使用volatile保证可见性。</p><h3 id="无锁化设计"><a href="#无锁化设计" class="headerlink" title="无锁化设计"></a>无锁化设计</h3><p>锁的存在必然有其使用场景，特别是需要<strong>被锁保护的资源众多</strong>，即临界区中的逻辑复杂，对其进行拆分会使代码变的臃肿，直接使用锁保护会清晰明了，但评估是否需要引入锁时需要慎重，特别是一些对吞吐量有极高要求的场景，能不用锁就不要用锁.</p><p><strong>无锁化设计的基础：CAS，比较和交换。</strong></p><p>在Java领域也提供了对应的原子操作工具：CAS</p><p>CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。</p><ul><li>如果内存位置的值与预期原值相匹配，那么处理器会自动将该位置值更新为新值 。</li><li>否则，处理器不做任何操作。</li><li>*CAS是CPU指令级命令**。</li></ul><p>CAS简单使用示例如下：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_7.png"></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 并发 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
             <tag> 锁 </tag>
+            
+            <tag> 并发 </tag>
             
         </tags>
       
@@ -362,9 +391,9 @@
       
         <tags>
             
-            <tag> 并发 </tag>
-            
             <tag> 锁 </tag>
+            
+            <tag> 并发 </tag>
             
             <tag> 线程 </tag>
             
@@ -703,11 +732,11 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> 消息中间件 </tag>
             
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
             <tag> ZOOKEEPER </tag>
             
@@ -734,13 +763,13 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
-            <tag> RabbitMQ </tag>
-            
             <tag> 消息中间件 </tag>
             
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
+            
+            <tag> RabbitMQ </tag>
             
         </tags>
       
@@ -819,9 +848,9 @@
       
         <tags>
             
-            <tag> SpringBatch </tag>
-            
             <tag> Spring生态 </tag>
+            
+            <tag> SpringBatch </tag>
             
             <tag> 批处理 </tag>
             
@@ -848,11 +877,11 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> 消息中间件 </tag>
             
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
         </tags>
       
@@ -877,11 +906,11 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> 消息中间件 </tag>
             
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
         </tags>
       
@@ -906,11 +935,11 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> 消息中间件 </tag>
             
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
         </tags>
       
@@ -935,11 +964,11 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> 消息中间件 </tag>
             
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
         </tags>
       
@@ -964,11 +993,11 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> 消息中间件 </tag>
             
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
         </tags>
       
@@ -1155,9 +1184,9 @@
       
         <tags>
             
-            <tag> Spring生态 </tag>
-            
             <tag> 状态机 </tag>
+            
+            <tag> Spring生态 </tag>
             
         </tags>
       
@@ -1207,9 +1236,9 @@
       
         <tags>
             
-            <tag> 锁 </tag>
-            
             <tag> 分布式 </tag>
+            
+            <tag> 锁 </tag>
             
         </tags>
       
@@ -1506,9 +1535,9 @@
     
     
     <entry>
-      <title>分类</title>
-      <link href="/categories/index.html"/>
-      <url>/categories/index.html</url>
+      <title>标签</title>
+      <link href="/tags/index.html"/>
+      <url>/tags/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
@@ -1517,9 +1546,9 @@
     
     
     <entry>
-      <title>标签</title>
-      <link href="/tags/index.html"/>
-      <url>/tags/index.html</url>
+      <title>分类</title>
+      <link href="/categories/index.html"/>
+      <url>/categories/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
