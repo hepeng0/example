@@ -18,9 +18,9 @@
 </ul>
 <h2 id="表分区"><a href="#表分区" class="headerlink" title="表分区"></a>表分区</h2><h3 id="什么是表分区"><a href="#什么是表分区" class="headerlink" title="什么是表分区"></a>什么是表分区</h3><p>MySQL 数据库中的数据是以文件的形势存在磁盘上的，默认放在 /var/lib/mysql/ 目录下面，</p>
 <p>我们可以通过 show variables like ‘%datadir%’; 命令来查看：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img.png"></p>
 <p>我们进入到这个目录下，就可以看到我们定义的所有数据库了，一个数据库就是一个文件夹，一个库中，有其对应的表的信息，如下：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_1.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_1.png"></p>
 <p>在 MySQL 中，如果存储引擎是 MyISAM，那么在 data 目录下会看到 3 类文件：.frm、.myi、.myd，作用如下：</p>
 <ol>
 <li><code>*.frm</code>：这个是表定义，是描述表结构的文件。</li>
@@ -39,10 +39,10 @@
 <h3 id="表分区两种方式"><a href="#表分区两种方式" class="headerlink" title="表分区两种方式"></a>表分区两种方式</h3><p>不同于 MyCat 中既可以垂直切分又可以水平切分，MySQL 数据库支持的分区类型为水平分区，它<strong>不支持垂直分区</strong>。</p>
 <h4 id="水平切分"><a href="#水平切分" class="headerlink" title="水平切分"></a>水平切分</h4><p>将同一个表的数据进行分块保存到不同的数据库中，来解决单表中数据量增长出现的压力。这些数据库中的表结构完全相同。</p>
 <p>先来一张简单的示意图，大家感受一下什么是水平切分：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_2.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_2.png"></p>
 <p>假设我的 DB 中有 table-1、table-2 以及 table-3 三张表，水平切分就是拿着我 40 米大刀，对准黑色的线条，砍一剑或者砍 N 剑！</p>
 <p>砍完之后，将砍掉的部分放到另外一个数据库实例中，变成下面这样：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_3.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_3.png"></p>
 <p>这样，原本放在一个 DB 中的 table 现在放在两个 DB 中了，观察之后我们发现：</p>
 <ul>
 <li>两个 DB 中表的个数都是完整的，就是原来 DB 中有几张表，现在还是几张。 </li>
@@ -57,10 +57,10 @@
 </ul>
 <h4 id="垂直切分"><a href="#垂直切分" class="headerlink" title="垂直切分"></a>垂直切分</h4><p>是指按功能模块拆分，以解决表与表之间的io竞争。比如分为订单库、商品库、用户库…这种方式多个数据库之间的表结构不同。</p>
 <p>先来一张简单的示意图，大家感受一下垂直切分：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_4.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_4.png"></p>
 <p>所谓的垂直切分就是拿着我 40 米大刀，对准了黑色的线条砍。</p>
 <p>砍完之后，将不同的表放到不同的数据库实例中去，变成下面这个样子：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_5.png" alt><br><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_6.png" alt><br><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_7.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_5.png"><br><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_6.png"><br><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_7.png"></p>
 <p>这个时候我们发现如下几个特点：</p>
 <ul>
 <li>每一个数据库实例中的表的数量都是不完整的。</li>
@@ -95,7 +95,7 @@
 <p>首先我们先来查看一下当前的 MySQL 是否支持分区。</p>
 <p>在 MySQL5.6.1 之前可以通过命令 <code>show variables like &#39;%have_partitioning%&#39;</code> 来查看 MySQL 是否支持分区。如果 <code>have_partitioning</code> 的值为 <code>YES</code>，则表示支持分区。</p>
 <p>从 MySQL5.6.1 开始，<code>have_partitioning</code> 参数已经被去掉了，而是用 <code>SHOW PLUGINS</code> 来代替。若有 <code>partition</code> 行且 <code>STATUS</code> 列的值为 <code>ACTIVE</code>，则表示支持分区，如下所示：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_8.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_8.png"></p>
 <p>确认我们的 MySQL 支持分区后，我们就可以开始分区啦！</p>
 <h4 id="RANGE-分区"><a href="#RANGE-分区" class="headerlink" title="RANGE 分区"></a>RANGE 分区</h4><p>RANGE 分区比较简单，就是根据某一个字段的值进行分区。 </p>
 <p>不过这个字段有一个要求，就是<strong>必须是主键或者是联合主键中的某个字段</strong>。</p>
@@ -106,29 +106,36 @@
 <li>如果 id 大于等于 200 则插入 p2 分区。</li>
 </ul>
 <p>上面的规则涉及到了 id 的所有范围了，如果没有第三条规则，那么插入一个 id 为 300 的记录时，就会报错。</p>
-<p>建表 SQL 如下：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int primary key,</span><br><span class="line">  username varchar(255)</span><br><span class="line">)engine=innodb</span><br><span class="line">  partition by range(id)(</span><br><span class="line">     partition  p0  values  less  than(100),</span><br><span class="line">     partition  p1  values  less  than(200),</span><br><span class="line">     partition  p2  values  less  than maxvalue  </span><br><span class="line">);</span><br></pre></td></tr></table></figure></p>
+<p>建表 SQL 如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int primary key,</span><br><span class="line">  username varchar(255)</span><br><span class="line">)engine=innodb</span><br><span class="line">  partition by range(id)(</span><br><span class="line">     partition  p0  values  less  than(100),</span><br><span class="line">     partition  p1  values  less  than(200),</span><br><span class="line">     partition  p2  values  less  than maxvalue  </span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
 <p>表创建成功后，我们进入到 <code>/var/lib/mysql/test08</code> 文件夹中，来看刚刚创建的表文件：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_9.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_9.png"></p>
 <p>可以看到，此时的数据文件分为好几个了。</p>
 <p>在 <code>information_schema.partitions</code> 表中，我们可以查看分区的详细信息：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_10.png" alt></p>
-<p>也可以自己写个 SQL 去查询：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from information_schema.partitions where table_schema=&#x27;test08&#x27; and table_name=&#x27;user&#x27;</span><br></pre></td></tr></table></figure><br><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_11.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_10.png"></p>
+<p>也可以自己写个 SQL 去查询：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from information_schema.partitions where table_schema=&#x27;test08&#x27; and table_name=&#x27;user&#x27;</span><br></pre></td></tr></table></figure>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_11.png"></p>
 <p>每一行展示一个分区的信息，包括分区的方式、该区的范围、分区的字段、该区目前有几条记录等等。</p>
 <p>RANGE 分区有一个比较典型的使用场景，就是按照日期对表进行分区，例如同一年注册的用户放在一个分区中，如下：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  createDate date,</span><br><span class="line">  primary key (id,createDate)</span><br><span class="line">)engine=innodb</span><br><span class="line">  partition by range(year(createDate))(</span><br><span class="line">     partition  p2022  values  less  than(2023),</span><br><span class="line">     partition  p2023  values  less  than(2024),</span><br><span class="line">     partition  p2024  values  less  than(2025)  </span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
 <p>注意，<code>createDate</code> 是联合主键的一员。如果 <code>createDate</code> 不是主键，只是一个普通字段，那么创建时就会抛出如下错误：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_12.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_12.png"></p>
 <p>现在，如果我们要查询 2022 年注册的用户，系统就只会去搜索 p2022 这个分区，通过 explain 执行计划可以证实我们的想法：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_13.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_13.png"></p>
 <p>如果想要删除 2022 年注册的用户，则只需要删除该分区即可：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table user drop partition p2022;</span><br></pre></td></tr></table></figure>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_14.png" alt></p>
+
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_14.png"></p>
 <p>由上图可以看到，删除之后，数据就没了。</p>
 <h4 id="LIST-分区"><a href="#LIST-分区" class="headerlink" title="LIST 分区"></a>LIST 分区</h4><p>LIST 分区和 RANGE 分区类似，区别在于 LIST 分区是基于列值匹配一个离散值集合中的某个值来进行选择，而非连续的。举个例子大家看下就明白了：</p>
 <p>假设我有一个用户表，用户有性别，现在想按照性别将用户分开存储，男性存储在一个分区中，女性存储在一个分区中，SQL 如下：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  primary key(id, gender)</span><br><span class="line">)engine=innodb</span><br><span class="line">  partition by list(gender)(</span><br><span class="line">     partition  man  values  in  (1),</span><br><span class="line">     partition  woman  values  in  (0));</span><br></pre></td></tr></table></figure>
+
 <p>这个表将来就两个分区，分别存储男性和女性，gender 的取值为 1 或者 0，gender 如果取其他值，执行就会出错，最终执行结果如下：</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_15.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_15.png"></p>
 <p>这样分区之后，将来查询男性或者查询女性效率都会比较高，删除某一性别的用户时删除效率也高。</p>
 <h4 id="HASH-分区"><a href="#HASH-分区" class="headerlink" title="HASH 分区"></a>HASH 分区</h4><p>HASH 分区的目的是将数据均匀地分布到预先定义的各个分区中，保证各分区的数据量大致都是一样的。</p>
 <p>在 RANGE 和 LIST 分区中，必须明确指定一个给定的列值或列值集合应该保存在哪个分区中；而在 HASH 分区中，MySQL 自动完成这些工作，用户所要做的只是基于将要进行哈希分区的列指定一个表达式，并且分区的数量。</p>
@@ -138,10 +145,12 @@
 <li>HASH 分区不能删除分区，所以<strong>不能使用 DROP PARTITION 操作进行分区删除</strong>操作。</li>
 </ul>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  primary key(id, gender)</span><br><span class="line">)engine=innodb partition by hash(id) partitions 4;</span><br></pre></td></tr></table></figure>
+
 <h4 id="KEY-分区"><a href="#KEY-分区" class="headerlink" title="KEY 分区"></a>KEY 分区</h4><p>KEY 分区和 HASH 分区相似，但是 KEY 分区支持除 text 和 BLOB 之外的所有数据类型的分区，而 HASH 分区只支持数字分区。</p>
 <p>KEY 分区不允许使用用户自定义的表达式进行分区，KEY 分区使用系统提供的 HASH 函数进行分区。</p>
 <p>当表中存在主键或者唯一索引时，如果创建 KEY 分区时没有指定字段系统默认会<strong>首选主键列作为分区字段</strong>,如果不存在主键列会选择<strong>非空唯一索引列</strong>作为分区字段。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  primary key(id, gender)</span><br><span class="line">)engine=innodb partition by key(id) partitions 4;</span><br></pre></td></tr></table></figure>
+
 <h4 id="COLUMNS-分区"><a href="#COLUMNS-分区" class="headerlink" title="COLUMNS 分区"></a>COLUMNS 分区</h4><p>COLUMN 分区是 5.5 开始引入的分区功能，只有 RANGE COLUMN 和 LIST COLUMN 这两种分区；支持整形、日期、字符串；这种分区方式和 RANGE、LIST 的分区方式非常的相似。</p>
 <p>COLUMNS Vs RANGE Vs LIST 分区：</p>
 <ul>
@@ -154,15 +163,19 @@
 <li>时间类型支持：date、datetime。</li>
 <li>字符类型支持：char、varchar、binary、varbinary；不支持text、blob。</li>
 </ul>
-<p>举个例子看下：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  createDate date,</span><br><span class="line">  primary key(id, createDate)</span><br><span class="line">)engine=innodb PARTITION BY RANGE COLUMNS(createDate) (</span><br><span class="line">    PARTITION p0 VALUES LESS THAN (&#x27;1990-01-01&#x27;),</span><br><span class="line">    PARTITION p1 VALUES LESS THAN (&#x27;2000-01-01&#x27;),</span><br><span class="line">    PARTITION p2 VALUES LESS THAN (&#x27;2010-01-01&#x27;),</span><br><span class="line">    PARTITION p3 VALUES LESS THAN (&#x27;2020-01-01&#x27;),</span><br><span class="line">    PARTITION p4 VALUES LESS THAN MAXVALUE</span><br><span class="line">);</span><br></pre></td></tr></table></figure><br>这是 RANGE COLUMNS，分区值是连续的。</p>
+<p>举个例子看下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  createDate date,</span><br><span class="line">  primary key(id, createDate)</span><br><span class="line">)engine=innodb PARTITION BY RANGE COLUMNS(createDate) (</span><br><span class="line">    PARTITION p0 VALUES LESS THAN (&#x27;1990-01-01&#x27;),</span><br><span class="line">    PARTITION p1 VALUES LESS THAN (&#x27;2000-01-01&#x27;),</span><br><span class="line">    PARTITION p2 VALUES LESS THAN (&#x27;2010-01-01&#x27;),</span><br><span class="line">    PARTITION p3 VALUES LESS THAN (&#x27;2020-01-01&#x27;),</span><br><span class="line">    PARTITION p4 VALUES LESS THAN MAXVALUE</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>这是 RANGE COLUMNS，分区值是连续的。</p>
 <p>再来看 LIST COLUMNS 分区，这个就类似于枚举了：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">create  table  user(</span><br><span class="line">  id int,</span><br><span class="line">  username varchar(255),</span><br><span class="line">  password varchar(255),</span><br><span class="line">  gender int,</span><br><span class="line">  createDate date,</span><br><span class="line">  primary key(id, createDate)</span><br><span class="line">)engine=innodb PARTITION BY LIST COLUMNS(createDate) (</span><br><span class="line">    PARTITION p0 VALUES IN (&#x27;1990-01-01&#x27;),</span><br><span class="line">    PARTITION p1 VALUES IN (&#x27;2000-01-01&#x27;),</span><br><span class="line">    PARTITION p2 VALUES IN (&#x27;2010-01-01&#x27;),</span><br><span class="line">    PARTITION p3 VALUES IN (&#x27;2020-01-01&#x27;)</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
 <h3 id="常见分区命令"><a href="#常见分区命令" class="headerlink" title="常见分区命令"></a>常见分区命令</h3><h4 id="添加分区"><a href="#添加分区" class="headerlink" title="添加分区"></a>添加分区</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">alter table user add partition (partition p3 values less than (4000)); -- range 分区</span><br><span class="line">alter table user add partition (partition p3 values in (40));  -- lists分区</span><br></pre></td></tr></table></figure>
 <h4 id="删除表分区（会删除数据）"><a href="#删除表分区（会删除数据）" class="headerlink" title="删除表分区（会删除数据）"></a>删除表分区（会删除数据）</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table user drop partition p30;</span><br></pre></td></tr></table></figure>
 <h4 id="除表的所有分区（不会丢失数据）："><a href="#除表的所有分区（不会丢失数据）：" class="headerlink" title="除表的所有分区（不会丢失数据）："></a>除表的所有分区（不会丢失数据）：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table user remove partitioning; </span><br></pre></td></tr></table></figure>
 <h4 id="重新定义-range-分区表（不会丢失数据）："><a href="#重新定义-range-分区表（不会丢失数据）：" class="headerlink" title="重新定义 range 分区表（不会丢失数据）："></a>重新定义 range 分区表（不会丢失数据）：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">alter table user partition by range(salary)(</span><br><span class="line">partition p1 values less than (2000),</span><br><span class="line">partition p2 values less than (4000)); </span><br></pre></td></tr></table></figure>
 <h4 id="重新定义-hash-分区表（不会丢失数据）："><a href="#重新定义-hash-分区表（不会丢失数据）：" class="headerlink" title="重新定义 hash 分区表（不会丢失数据）："></a>重新定义 hash 分区表（不会丢失数据）：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table user partition by hash(salary) partitions 7; </span><br></pre></td></tr></table></figure>
 <h4 id="合并分区：把-2-个分区合并为一个，不会丢失数据："><a href="#合并分区：把-2-个分区合并为一个，不会丢失数据：" class="headerlink" title="合并分区：把 2 个分区合并为一个，不会丢失数据："></a>合并分区：把 2 个分区合并为一个，不会丢失数据：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table user  reorganize partition p1,p2 into (partition p1 values less than (1000));</span><br></pre></td></tr></table></figure>
+
 <h2 id="分片"><a href="#分片" class="headerlink" title="分片"></a>分片</h2><p>分片是把数据库横向扩展（Scale Out）到多个物理节点上的一种有效的方式，其主要目的是为突破单节点数据库服务器的 I/O 能力限制，解决数据库扩展性问题。</p>
 <p>Shard这个词的意思是“碎片”。</p>
 <p>如果将一个数据库当作一块大玻璃，将这块玻璃打碎，那么每一小块都称为数据库的碎片（DatabaseShard）。</p>
@@ -175,20 +188,22 @@
 <h2 id="分表和分区"><a href="#分表和分区" class="headerlink" title="分表和分区"></a>分表和分区</h2><p>分表从表面意思说就是把一张表分成多个小表，分区则是把一张表的数据分成N多个区块，这些区块可以在同一个磁盘上，也可以在不同的磁盘上。</p>
 <p>分表和分区的区别</p>
 <ol>
-<li><p>实现方式上</p>
-<p>mysql的分表是真正的分表，一张表分成很多表后，每一个小表都是完正的一张表，都对应三个文件（MyISAM引擎：一个.MYD数据文件，.MYI索引文件，.frm表结构文件）。</p>
-</li>
-<li><p>数据处理上</p>
-<p>分表后数据都是存放在分表里，总表只是一个外壳，存取数据发生在一个一个的分表里面。分区则不存在分表的概念，分区只不过把存放数据的文件分成了许多小块，分区后的表还是一张表，数据处理还是由自己来完成。</p>
-</li>
-<li><p>提高性能上</p>
-<p>分表后，单表的并发能力提高了，磁盘I/O性能也提高了。分区突破了磁盘I/O瓶颈，想提高磁盘的读写能力，来增加mysql性能。</p>
-<p>在这一点上，分区和分表的测重点不同，分表重点是存取数据时，如何提高mysql并发能力上；而分区呢，如何突破磁盘的读写能力，从而达到提高mysql性能的目的。</p>
-</li>
-<li><p>实现的难易度上</p>
-<p>分表的方法有很多，用merge来分表，是最简单的一种方式。这种方式和分区难易度差不多，并且对程序代码来说可以做到透明的。如果是用其他分表方式就比分区麻烦了。分区实现是比较简单的，建立分区表，跟建平常的表没什么区别，并且对代码端来说是透明的。</p>
-</li>
+<li>实现方式上</li>
 </ol>
+<p>  mysql的分表是真正的分表，一张表分成很多表后，每一个小表都是完正的一张表，都对应三个文件（MyISAM引擎：一个.MYD数据文件，.MYI索引文件，.frm表结构文件）。</p>
+<ol start="2">
+<li>数据处理上</li>
+</ol>
+<p>  分表后数据都是存放在分表里，总表只是一个外壳，存取数据发生在一个一个的分表里面。分区则不存在分表的概念，分区只不过把存放数据的文件分成了许多小块，分区后的表还是一张表，数据处理还是由自己来完成。</p>
+<ol start="3">
+<li>提高性能上</li>
+</ol>
+<p>  分表后，单表的并发能力提高了，磁盘I/O性能也提高了。分区突破了磁盘I/O瓶颈，想提高磁盘的读写能力，来增加mysql性能。</p>
+<p>  在这一点上，分区和分表的测重点不同，分表重点是存取数据时，如何提高mysql并发能力上；而分区呢，如何突破磁盘的读写能力，从而达到提高mysql性能的目的。</p>
+<ol start="4">
+<li>实现的难易度上</li>
+</ol>
+<p>  分表的方法有很多，用merge来分表，是最简单的一种方式。这种方式和分区难易度差不多，并且对程序代码来说可以做到透明的。如果是用其他分表方式就比分区麻烦了。分区实现是比较简单的，建立分区表，跟建平常的表没什么区别，并且对代码端来说是透明的。</p>
 <p>分区的适用场景: </p>
 <ol>
 <li>一张表的查询速度已经慢到影响使用的时候。</li>
@@ -205,8 +220,8 @@
 <p>面对高并发的读写访问，当数据库master服务器无法承载写操作压力时，不管如何扩展slave服务器，此时都没有意义了。</p>
 <p>因此，我们必须换一种思路，对数据库进行拆分，从而提高数据库写入能力，这就是所谓的分库。</p>
 <p>与分表策略相似，分库可以采用通过一个关键字取模的方式，来对数据访问进行路由，如下图所示</p>
-<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_16.png" alt></p>
-<h2 id="分区与分片"><a href="#分区与分片" class="headerlink" title="分区与分片"></a>分区与分片</h2><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_17.png" alt></p>
+<p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_16.png"></p>
+<h2 id="分区与分片"><a href="#分区与分片" class="headerlink" title="分区与分片"></a>分区与分片</h2><p><img src="/2022/03/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E5%88%86%E5%8C%BA%E5%88%86%E7%89%87%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/img_17.png"></p>
 </div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MySQL/">MySQL</a><a class="post-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><a class="post-meta__tags" href="/tags/InnoDB/">InnoDB</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2022/04/02/JAVA%E5%9F%BA%E7%A1%80/JAVA%E4%BB%A3%E7%90%86/JavaAgent%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E5%AE%9E%E7%8E%B0%E5%8F%8A%E5%8E%9F%E7%90%86%E8%AF%A6%E7%BB%86%E5%88%86%E6%9E%90/"><i class="fa fa-chevron-left">  </i><span>JavaAgent动态代理实现及原理详细分析</span></a></div><div class="next-post pull-right"><a href="/2022/03/09/%E4%B8%AD%E9%97%B4%E4%BB%B6/Cache/Redis/Redis%E5%88%9D%E6%8E%A2%E4%B9%8B%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/"><span>Redis初探之常见问题汇总</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
   clientID: '83850031ee87c27765eb',
   clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',

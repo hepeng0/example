@@ -17,7 +17,7 @@
 <li><p>架构的扩展。业务量越来越大，I/O访问频率过高，单机无法满足，此时做多库的存储，降低磁盘I/O访问的频率，提高单个机器的I/O性能。</p>
 </li>
 </ol>
-<h3 id="MySQL主从复制"><a href="#MySQL主从复制" class="headerlink" title="MySQL主从复制"></a>MySQL主从复制</h3><h4 id="复制过程"><a href="#复制过程" class="headerlink" title="复制过程"></a>复制过程</h4><p><img src="/2022/02/24/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5%E4%B8%8EGTID%E7%89%B9%E6%80%A7/mysql主从同步.png" alt="mysql主从同步"></p>
+<h3 id="MySQL主从复制"><a href="#MySQL主从复制" class="headerlink" title="MySQL主从复制"></a>MySQL主从复制</h3><h4 id="复制过程"><a href="#复制过程" class="headerlink" title="复制过程"></a>复制过程</h4><p><img src="/2022/02/24/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5%E4%B8%8EGTID%E7%89%B9%E6%80%A7/mysql%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5.png" alt="mysql主从同步"></p>
 <ul>
 <li>主服务器（master）将数据更改的操作记录写到二进制redo日志（binlog）中</li>
 <li>从服务器（slave）将主服务器中的二进制日志复制到自己的中继日志（relay log）中<ul>
@@ -58,7 +58,7 @@
 </li>
 </ul>
 <h2 id="MySQL-GTID特性"><a href="#MySQL-GTID特性" class="headerlink" title="MySQL GTID特性"></a>MySQL GTID特性</h2><p>TODO</p>
-</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MySQL/">MySQL</a><a class="post-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><a class="post-meta__tags" href="/tags/InnoDB/">InnoDB</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2022/02/25/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%8E%9F%E7%90%86%E7%AF%87%E4%B9%8B%E6%95%B0%E6%8D%AE%E9%A1%B5%E4%B8%8E%E7%B4%A2%E5%BC%95%E5%88%9D%E6%8E%A2/"><i class="fa fa-chevron-left">  </i><span>InnoDB原理篇之数据页与索引初探</span></a></div><div class="next-post pull-right"><a href="/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E4%BA%8B%E5%8A%A1%E6%95%B0%E6%8D%AE%E5%BA%93%E7%89%B9%E6%80%A7%E4%B8%8E%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/"><span>事务数据库特性及隔离级别</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MySQL/">MySQL</a><a class="post-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><a class="post-meta__tags" href="/tags/InnoDB/">InnoDB</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2022/02/25/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%8E%9F%E7%90%86%E7%AF%87%E4%B9%8B%E6%95%B0%E6%8D%AE%E9%A1%B5%E4%B8%8E%E7%B4%A2%E5%BC%95%E5%88%9D%E6%8E%A2/"><i class="fa fa-chevron-left">  </i><span>InnoDB原理篇之数据页与索引初探</span></a></div><div class="next-post pull-right"><a href="/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8BInnoDB%E4%B8%ADMVCC%E6%B5%85%E6%8E%A2/"><span>数据库MySQL系列之MVCC浅探</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
   clientID: '83850031ee87c27765eb',
   clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',
   repo: 'blob-comment',

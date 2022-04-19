@@ -16,10 +16,10 @@
 <ul>
 <li>prepare 阶段<ul>
 <li>Proposer提案者：负责提出 proposal，每个提案者在提出提案时都会首先获取到一个 具有全局唯一性的、递增的提案编号N，即在整个集群中是唯一的编号 N，然后将该编号赋予其要提出的提案，在第一阶段是只将提案编号发送给所有的表决者。  </li>
-<li>Acceptor表决者：每个表决者在 accept 某提案后，会将该提案编号N记录在本地，这样每个表决者中保存的已经被 accept 的提案中会存在一个编号最大的提案，其编号假设为 maxN。每个表决者仅会 accept 编号大于自己本地 maxN 的提案，在批准提案时表决者会将以前接受过的最大编号的提案作为响应反馈给 Proposer。<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_1.png" alt></li>
+<li>Acceptor表决者：每个表决者在 accept 某提案后，会将该提案编号N记录在本地，这样每个表决者中保存的已经被 accept 的提案中会存在一个编号最大的提案，其编号假设为 maxN。每个表决者仅会 accept 编号大于自己本地 maxN 的提案，在批准提案时表决者会将以前接受过的最大编号的提案作为响应反馈给 Proposer。<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_1.png"></li>
 </ul>
 </li>
-<li>accept 阶段<br>当一个提案被 Proposer 提出后，如果 Proposer 收到了超过半数的 Acceptor 的批准（Proposer 本身同意），那么此时 Proposer 会给所有的 Acceptor 发送真正的提案（你可以理解为第一阶段为试探），这个时候 Proposer 就会发送提案的内容和提案编号。<br>表决者收到提案请求后会再次比较本身已经批准过的最大提案编号和该提案编号，如果该提案编号 大于等于 已经批准过的最大提案编号，那么就 accept 该提案（此时执行提案内容但不提交），随后将情况返回给 Proposer 。如果不满足则不回应或者返回 NO 。<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_2.png" alt><br>当 Proposer 收到超过半数的 accept ，那么它这个时候会向所有的 acceptor 发送提案的提交请求。需要注意的是，因为上述仅仅是超过半数的 acceptor 批准执行了该提案内容，其他没有批准的并没有执行该提案内容，所以这个时候需要向未批准的 acceptor 发送提案内容和提案编号并让它无条件执行和提交，而对于前面已经批准过该提案的 acceptor 来说 仅仅需要发送该提案的编号 ，让 acceptor 执行提交就行了。<br>而如果 Proposer 如果没有收到超过半数的 accept 那么它将会将 递增 该 Proposal 的编号，然后 重新进入 Prepare 阶段 。<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_3.png" alt><br>而如果 Proposer 如果没有收到超过半数的 accept 那么它将会将 递增 该 Proposal 的编号，然后 重新进入 Prepare 阶段 。</li>
+<li>accept 阶段<br>当一个提案被 Proposer 提出后，如果 Proposer 收到了超过半数的 Acceptor 的批准（Proposer 本身同意），那么此时 Proposer 会给所有的 Acceptor 发送真正的提案（你可以理解为第一阶段为试探），这个时候 Proposer 就会发送提案的内容和提案编号。<br>表决者收到提案请求后会再次比较本身已经批准过的最大提案编号和该提案编号，如果该提案编号 大于等于 已经批准过的最大提案编号，那么就 accept 该提案（此时执行提案内容但不提交），随后将情况返回给 Proposer 。如果不满足则不回应或者返回 NO 。<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_2.png"><br>当 Proposer 收到超过半数的 accept ，那么它这个时候会向所有的 acceptor 发送提案的提交请求。需要注意的是，因为上述仅仅是超过半数的 acceptor 批准执行了该提案内容，其他没有批准的并没有执行该提案内容，所以这个时候需要向未批准的 acceptor 发送提案内容和提案编号并让它无条件执行和提交，而对于前面已经批准过该提案的 acceptor 来说 仅仅需要发送该提案的编号 ，让 acceptor 执行提交就行了。<br>而如果 Proposer 如果没有收到超过半数的 accept 那么它将会将 递增 该 Proposal 的编号，然后 重新进入 Prepare 阶段 。<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_3.png"><br>而如果 Proposer 如果没有收到超过半数的 accept 那么它将会将 递增 该 Proposal 的编号，然后 重新进入 Prepare 阶段 。</li>
 </ul>
 <h4 id="Paxos算法的死循环问题"><a href="#Paxos算法的死循环问题" class="headerlink" title="Paxos算法的死循环问题"></a>Paxos算法的死循环问题</h4><p>其实就有点类似于两个人吵架，小明说我是对的，小红说我才是对的，两个人据理力争的谁也不让谁🤬🤬。<br>比如说，此时提案者 P1 提出一个方案 M1，完成了 Prepare 阶段的工作，这个时候 acceptor 则批准了 M1，但是此时提案者 P2 同时也提出了一个方案 M2，它也完成了 Prepare 阶段的工作。然后 P1 的方案已经不能在第二阶段被批准了（因为 acceptor 已经批准了比 M1 更大的 M2），所以 P1 自增方案变为 M3 重新进入 Prepare 阶段，然后 acceptor ，又批准了新的 M3 方案，它又不能批准 M2 了，这个时候 M2 又自增进入 Prepare 阶段。<br>就这样无休无止的永远提案下去，这就是 paxos 算法的死循环问题。<br>那么如何解决呢？很简单，人多了容易吵架，我现在 就允许一个能提案 就行了。</p>
 <h3 id="Raft-算法"><a href="#Raft-算法" class="headerlink" title="Raft 算法"></a>Raft 算法</h3><h2 id="分布式事务解决方案"><a href="#分布式事务解决方案" class="headerlink" title="分布式事务解决方案"></a>分布式事务解决方案</h2><h3 id="XA规范-协议"><a href="#XA规范-协议" class="headerlink" title="XA规范/协议"></a>XA规范/协议</h3><p>X/Open组织（现在的Open Group）定义了一套DTP（Distributed Transaction Processing）分布式事务处理模型，主要包含以下四部分：</p>
@@ -31,7 +31,7 @@
 </ul>
 <p><strong>XA规范</strong>则是DTP模型定义TM和RM之间通讯的接口规范。  </p>
 <p>XA接口函数由数据库厂商提供。<br>TM用它来通知数据库事务的开始、结束、提交、回滚。<br>基于XA规范衍生出下面的二阶段提交（2PC）、三阶段提交（3PC）。  </p>
-<p>XA规范包括两套函数，以xa<em>开头的及以ax</em>开头的。<br>以下的函数使事务管理器可以对资源管理器进行的操作：</p>
+<p>XA规范包括两套函数，以xa_开头的及以ax_开头的。<br>以下的函数使事务管理器可以对资源管理器进行的操作：</p>
 <ul>
 <li>xa_open,xa_close：建立和关闭与资源管理器的连接。</li>
 <li>xa_start,xa_end：开始和结束一个本地事务。</li>
@@ -50,8 +50,9 @@
 </ul>
 <h4 id="二阶段提交（2PC）"><a href="#二阶段提交（2PC）" class="headerlink" title="二阶段提交（2PC）"></a>二阶段提交（2PC）</h4><p>2PC就是分布式事务中将事务分为两步进行提交。基于数据库的XA协议完成事务本质上就是二阶段提交（XA、JTA/JTS）。</p>
 <ul>
-<li>协调者（Coordinater）：事务管理器（TM）</li>
-<li><p>参与者（participants）：资源管理器（RM）<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_4.png" alt></p>
+<li><p>协调者（Coordinater）：事务管理器（TM）</p>
+</li>
+<li><p>参与者（participants）：资源管理器（RM）<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_4.png"></p>
 </li>
 <li><p><strong>准备阶段</strong>：  </p>
 <ul>
@@ -76,7 +77,7 @@
 <ul>
 <li>canCommit：协调者询问参与者，是否具备执行事务的条件，参与者进行自身事务必要条件的检查；</li>
 <li>preCommit：协调者通知参与者进行事务的预提交；</li>
-<li>doCommit：协调者根据preCommit阶段参与者的反馈结果通知参与者是否进行事务提交或是进行事务回滚。<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_5.png" alt></li>
+<li>doCommit：协调者根据preCommit阶段参与者的反馈结果通知参与者是否进行事务提交或是进行事务回滚。<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_5.png"></li>
 </ul>
 <h4 id="TCC事务补偿方案"><a href="#TCC事务补偿方案" class="headerlink" title="TCC事务补偿方案"></a>TCC事务补偿方案</h4><p>TCC的核心思想就是校验、资源锁定、补偿，对每个操作（Try）都提供确认（Confirm）和取消（cancel）的操作，这样根据操作的结果，来确认是进行Confirm还是Cancel。<br>可以看出XA的两阶段提交是基于资源层面的，而TCC也是一种两阶段提交，但它是基于应用层面的。</p>
 <ul>
@@ -114,7 +115,7 @@
 <li>最终一致性：过程中数据存在一定时间内的不一致，但超过限定时间后，需要最终会保持一致。</li>
 </ul>
 <p>保证以上两点的情况下，可以通过消息中间件（RocketMQ）来完成分布式事务处理，因为RocketMQ支持事务消息，可以方便的让我们进行分布式事务控制。</p>
-<p>RocketMQ的事务消息的原理：<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_6.png" alt></p>
+<p>RocketMQ的事务消息的原理：<br><img src="/2020/06/09/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F03%E4%B9%8B%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/img_6.png"></p>
 <p>half message：半消息，此时消息不能被consumer所发现和消费，需producer进行二次消息确认。</p>
 <ul>
 <li>producer发送half message给MQ Server；</li>

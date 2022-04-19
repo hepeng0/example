@@ -13,7 +13,7 @@
 <p>如下图所示，JPDA被抽象为三层实现。其中JVMTI就是JVM对外暴露的接口。 JDI是实现了JDWP通信协议的客户端，调试器通过它和JVM中被调试程序通信。</p>
 <p>JVMTI 本质上是在JVM内部的许多事件进行了埋点。通过这些埋点可以给外部提供当前上下文的一些信息。甚至可以接受外部的命令来改变下一步的动作。外部程序一般利用C/C++实现一个JVMTIAgent，在Agent里面注册一些JVM事件的回调。当事件发生时JVMTI调用这些回调方法。Agent可以在回调方法里面实现自己的逻辑。</p>
 <p>JVMTIAgent是以动态链接库的形式被虚拟机加载的。</p>
-<p><img src="/2020/06/18/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/%E5%9F%BA%E4%BA%8EJVMTI%E6%8A%80%E6%9C%AF%E7%9A%84Jar%E5%8C%85%E5%AD%97%E8%8A%82%E7%A0%81%E5%8A%A0%E5%AF%86%E6%8A%80%E6%9C%AF%E5%88%9D%E6%8E%A2/img.png" alt></p>
+<p><img src="/2020/06/18/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/%E5%9F%BA%E4%BA%8EJVMTI%E6%8A%80%E6%9C%AF%E7%9A%84Jar%E5%8C%85%E5%AD%97%E8%8A%82%E7%A0%81%E5%8A%A0%E5%AF%86%E6%8A%80%E6%9C%AF%E5%88%9D%E6%8E%A2/img.png"></p>
 <h2 id="JVMTI的历史"><a href="#JVMTI的历史" class="headerlink" title="JVMTI的历史"></a>JVMTI的历史</h2><p>JVMTI 的前身是JVMDI（Java Virtual Machine Debug Interface）和 JVMPI（Java Virtual Machine Profiler Interface），它们原来分别被用于提供调试 Java 程序以及 Java 程序调节性能的功能。</p>
 <p>在 J2SE 5.0 之后 JDK 取代了JVMDI 和 JVMPI 这两套接口，JVMDI 在最新的 Java SE 6 中已经不提供支持，而 JVMPI 也计划在 Java SE 7 后被彻底取代。</p>
 <h2 id="JVMTI的功能"><a href="#JVMTI的功能" class="headerlink" title="JVMTI的功能"></a>JVMTI的功能</h2><p>JVMTI处于整个JPDA 体系的最底层，所有调试功能本质上都需要通过 JVMTI 来提供。</p>
@@ -33,15 +33,19 @@
 <li>操作 JVMTI 的 Capability 参数；</li>
 <li>使用系统参数</li>
 </ul>
-<p>动态库被加载之后，虚拟机会先寻找一个 Agent 入口函数：<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *vm, char *options, void *reserved)</span><br></pre></td></tr></table></figure></p>
+<p>动态库被加载之后，虚拟机会先寻找一个 Agent 入口函数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *vm, char *options, void *reserved)</span><br></pre></td></tr></table></figure>
+
 <p>在这个函数中，虚拟机传入了一个 JavaVM 指针，以及命令行的参数。</p>
 <p>通过 JavaVM，我们可以获得 JVMTI 的指针，并获得 JVMTI 函数的使用能力，所有的 JVMTI 函数都通过这个 jvmtiEnv 获取，不同的虚拟机实现提供的函数细节可能不一样，但是使用的方式是统一的。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jint ret = vm-&gt;GetEnv((void **)&amp;jvmti, JVMTI_VERSION);</span><br></pre></td></tr></table></figure>
+
 <p>这里传入的版本信息参数很重要，不同的 JVMTI 环境所提供的功能以及处理方式都可能有所不同，不过它在同一个虚拟机中会保持不变。</p>
 <p>命令行参数事实上就是上面启动命令行中的 options 部分，在 Agent 实现中需要进行解析并完成后续处理工作。参数传入的字符串仅仅在 Agent_OnLoad 函数里有效。</p>
 <p>需要强调的是，这个时候由于虚拟机并未完成初始化工作，并不是所有的 JVMTI 函数都可以被使用。</p>
 <p>Agent 还可以在运行时加载。具体说来，虚拟机会在运行时监听并接受 Agent 的加载，在这个时候，它会使用 Agent 的：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char *options, void *reserved);</span><br></pre></td></tr></table></figure>
+
 <p>同样的在这个初始化阶段，不是所有的 JVMTI 的 Capability 参数都处于可操作状态，而且 options 这个 char 数组在这个函数运行之后就会被丢弃，如果需要，需要做好保留工作。</p>
 <p>Agent 的主要功能是通过一系列的在虚拟机上设置的回调（callback）函数完成的，一旦某些事件发生，Agent 所设置的回调函数就会被调用，来完成特定的需求。</p>
 <h3 id="卸载"><a href="#卸载" class="headerlink" title="卸载"></a>卸载</h3><p>最后，Agent 完成任务，或者虚拟机关闭的时候，虚拟机都会调用一个类似于类析构函数的方法来完成最后的清理任务，注意这个函数和虚拟机自己的 VM_DEATH 事件是不同的。</p>

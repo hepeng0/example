@@ -28,8 +28,7 @@
 </ul>
 <h4 id="服务器推送"><a href="#服务器推送" class="headerlink" title="服务器推送"></a>服务器推送</h4><ul>
 <li><p>HTTP2中服务端可以在发送页面HTML时主动推送其它资源，而不用等到浏览器解析到相应位置，发起请求再响应。例如服务端可以主动把JS和CSS文件推送给客户端，而不需要客户端解析HTML时再发送这些请求。</p>
-  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">当然，如果一次性推送了太多的资源，因为浏览器需要处理所有推送过来的资源。反而会拖累性能。所以需要根据业务场景做权衡。</span><br></pre></td></tr></table></figure>
-</li>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">当然，如果一次性推送了太多的资源，因为浏览器需要处理所有推送过来的资源。反而会拖累性能。所以需要根据业务场景做权衡。</span><br></pre></td></tr></table></figure></li>
 </ul>
 <h4 id="头部压缩"><a href="#头部压缩" class="headerlink" title="头部压缩"></a>头部压缩</h4><ul>
 <li><p>HTTP 1.1请求的大小变得越来越大，有时甚至会大于TCP窗口的初始大小，因为它们需要等待带着ACK的响应回来以后才能继续被发送。HTTP/2对消息头采用HPACK（专为http/2头部设计的压缩格式）进行压缩传输，能够节省消息头占用的网络的流量。而HTTP/1.x每次请求，都会携带大量冗余头信息，浪费了很多带宽资源。像cookie这些信息，每个请求都会附带，产生了很多不必要的资源消耗。为了减少这块的资源消耗并提升性能， HTTP/2对这些首部采取了压缩策略：</p>
@@ -41,30 +40,29 @@
 </li>
 </ul>
 <h3 id="ALPN-应用协议协商"><a href="#ALPN-应用协议协商" class="headerlink" title="ALPN 应用协议协商"></a>ALPN 应用协议协商</h3><p>HTTPS 握手的时候，客户端会首先告诉服务端自己支持的协议，由服务端选择客户端服务端都支持的协议。如果服务端Nginx开启了HTTP2支持，服务端会选择HTTP2协议，否则，服务端就会选择HTTP1.1协议来通讯。</p>
-<h2 id="SSL-TLS模型"><a href="#SSL-TLS模型" class="headerlink" title="SSL/TLS模型"></a>SSL/TLS模型</h2><h3 id="TLS版本"><a href="#TLS版本" class="headerlink" title="TLS版本"></a>TLS版本</h3><p><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img.png" alt></p>
+<h2 id="SSL-TLS模型"><a href="#SSL-TLS模型" class="headerlink" title="SSL/TLS模型"></a>SSL/TLS模型</h2><h3 id="TLS版本"><a href="#TLS版本" class="headerlink" title="TLS版本"></a>TLS版本</h3><p><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img.png"></p>
 <p>历史版本的TLS/SSL因为安全漏洞和性能问题已经慢慢成为历史的尘埃，目前应用最为广泛的是TLS1.2版本，而TLS 1.3 是对于TLS1.2的升级，提供更强大的安全性和更高的性能。</p>
-<h3 id="加密套件"><a href="#加密套件" class="headerlink" title="加密套件"></a>加密套件</h3><p><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img1.png" alt></p>
+<h3 id="加密套件"><a href="#加密套件" class="headerlink" title="加密套件"></a>加密套件</h3><p><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img1.png"></p>
 <p>加密套件：TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA</p>
 <p>解释:</p>
 <ul>
 <li>基于TLS协议，使用ECDHE和RSA作为秘钥交换算法，加密算法是AES GCM，秘钥长度128位，哈希算法使用sha256</li>
 <li>AES-GCM 是目前常用的分组加密算法，但是其有一个缺点就是计算量大，导致性能和电量开销比较大。为了解决这个问题，Intel 推出了名为 AES NI（Advanced Encryption Standard new instructions）的 x86 指令拓展集，从硬件上提供对 AES 的支持。对于支持 AES NI 指令的主机来说，使用 AES-GCM 是最佳选择。AES-GCM的优点在于可以利用多核提高加解密性能。</li>
 </ul>
-<h3 id="HTTPS握手过程"><a href="#HTTPS握手过程" class="headerlink" title="HTTPS握手过程"></a>HTTPS握手过程</h3><p><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img2.png" alt></p>
+<h3 id="HTTPS握手过程"><a href="#HTTPS握手过程" class="headerlink" title="HTTPS握手过程"></a>HTTPS握手过程</h3><p><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img2.png"></p>
 <ul>
 <li><p><strong>Client-hello 阶段</strong></p>
 <p>Client-hello 是TCP链接建立后客户端发送的第一条消息，主要目的是把客户端支持的功能和选项告诉服务端。</p>
 <ul>
 <li>浏览器中完成地址输入后, 解析域名获得 IP Host 地址, 浏览器会与此 Host 的443(默认, 如果指定其他端口则会连接此端口) 三次握手建立TCP连接，然后进入TLS 握手协议的 Client-hello。这一步骤中浏览器会将客户端支持的加密套件，目标Host等信息发送给服务器, 并会附上一份随机生成的 session ticket1.</li>
-<li>ALPN协商: 应用层可以协商在安全连接层之上使用什么协议, 避免了额外的往返通讯。<br><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img_1.png" alt></li>
+<li>ALPN协商: 应用层可以协商在安全连接层之上使用什么协议, 避免了额外的往返通讯。<br><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img_1.png"></li>
 </ul>
 </li>
 <li><p><strong>Server-hello阶段</strong></p>
 <ul>
 <li>服务器收到浏览器发送来的 TLS 握手请求后, 存储浏览器发送的session ticket1, 然后根据发送来的 host 寻找对应的服务器证书, 然后会将服务器证书, 服务器从Client Hello提供的客户端支持的加密套件清单中按照优先级选择一个双方都支持的套件（如果服务端支持的套件和client支持的套件交集为空则握手失败）, 和一份随机生成的 session ticket2 返回给浏览器.</li>
 </ul>
-<img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img_2.png" class>
-</li>
+<img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img_2.png" class></li>
 </ul>
 <p><strong>Client-hello和server-hello的步骤很像是买东西： 客户端： 我有多少钱，能支付宝也能微信付款， 服务端：需要xxx RMB，我们使用支付宝吧。</strong></p>
 <ul>
@@ -86,6 +84,7 @@
 </li>
 </ul>
 <h4 id="HTTPS握手过程抓包："><a href="#HTTPS握手过程抓包：" class="headerlink" title="HTTPS握手过程抓包："></a>HTTPS握手过程抓包：</h4><img src="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/img_3.png" class>
+
 <ul>
 <li>前三行为TCP三次握手，</li>
 <li>第四行客户端发起Client hello，</li>

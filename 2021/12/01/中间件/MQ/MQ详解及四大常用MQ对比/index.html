@@ -79,14 +79,14 @@
 </ul>
 <h4 id="Message"><a href="#Message" class="headerlink" title="Message"></a>Message</h4><p>消息体，根据不同通信协议定义的固定格式进行编码的数据包，来封装业务数据，实现消息的传输</p>
 <h3 id="消息中间件模式"><a href="#消息中间件模式" class="headerlink" title="消息中间件模式"></a>消息中间件模式</h3><h4 id="点对点（PTP）"><a href="#点对点（PTP）" class="headerlink" title="点对点（PTP）"></a>点对点（PTP）</h4><p>PTP点对点： <strong>使用Queue作为通信载体</strong></p>
-<p><img src="/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011037.png" alt></p>
+<p><img src="/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011037.png"></p>
 <p>说明：</p>
 <ul>
 <li>消息生产者生产消息发送到queue中，然后消息消费者从queue中取出并且消费消息。</li>
 <li>消息被消费以后，queue中不再存储，所以消息消费者不可能消费到已经被消费的消息。 Queue支持存在多个消费者，<strong>但是对一个消息而言，只会有一个消费者可以消费</strong>。</li>
 </ul>
 <h4 id="发布-订阅-PUB-SUB"><a href="#发布-订阅-PUB-SUB" class="headerlink" title="发布/订阅(PUB/SUB)"></a>发布/订阅(PUB/SUB)</h4><p>Pub/Sub发布订阅（广播）：<strong>使用topic作为通信载体</strong></p>
-<p><img src="/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011041.png" alt></p>
+<p><img src="/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011041.png"></p>
 <p>说明：</p>
 <ul>
 <li>消息生产者（发布）将消息发布到topic中，同时有多个消息消费者（订阅）消费该消息。和点对点方式不同，<strong>发布到topic的消息会被所有订阅者消费</strong>。</li>
@@ -144,7 +144,7 @@
 <li>入队时，当数据比较小时Redis的性能要高于RabbitMQ，而如果数据大小超过了10K，Redis则慢的无法忍受；</li>
 <li>出队时，无论数据大小，Redis都表现出非常好的性能，而RabbitMQ的出队性能则远低于Redis。</li>
 </ul>
-<h3 id="主要消息中间件的比较"><a href="#主要消息中间件的比较" class="headerlink" title="主要消息中间件的比较"></a>主要消息中间件的比较</h3><p><img src="/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011141.png" alt></p>
+<h3 id="主要消息中间件的比较"><a href="#主要消息中间件的比较" class="headerlink" title="主要消息中间件的比较"></a>主要消息中间件的比较</h3><p><img src="/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/MQ%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9B%9B%E5%A4%A7%E5%B8%B8%E7%94%A8MQ%E5%AF%B9%E6%AF%94/202112011141.png"></p>
 </div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MQ/">MQ</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2021/12/01/%E4%B8%AD%E9%97%B4%E4%BB%B6/MQ/RocketMQ/RocketMQ%E5%88%9D%E6%8E%A2%E4%B9%8B%E6%95%B4%E4%BD%93%E8%AE%BE%E8%AE%A1%E7%AE%80%E4%BB%8B/"><i class="fa fa-chevron-left">  </i><span>RocketMQ初探之整体设计简介</span></a></div><div class="next-post pull-right"><a href="/2021/11/26/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/%E8%AF%A6%E8%A7%A3HTTP2.0%E5%8F%8AHTTPS%E5%8D%8F%E8%AE%AE/"><span>详解HTTP2.0及HTTPS协议</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
   clientID: '83850031ee87c27765eb',
   clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',

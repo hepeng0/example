@@ -24,6 +24,7 @@
 <p>只有显式的使用<strong>start transaction</strong>开启一个事务，才能将一个代码块放在事务中执行。</p>
 <h3 id="一致性"><a href="#一致性" class="headerlink" title="一致性"></a>一致性</h3><p>一致性是指在<strong>事务开始之前和事务结束以后，数据库的完整性约束没有被破坏</strong>。这是说数据库事务不能破坏关系<strong>数据的完整性以及业务逻辑上的一致性</strong>。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">如A给B转账，不论转账的事务操作是否成功，其两者的存款总额不变（这是业务逻辑的一致性，至于数据库关系约束的完整性就更好理解了）。</span><br></pre></td></tr></table></figure>
+
 <p>保障机制：</p>
 <ul>
 <li>数据库层面: 在一个事务执行之前和之后，数据符合你设置的约束（唯一约束，外键约束,check约束等)和触发器设置；</li>
@@ -38,6 +39,7 @@
 <h3 id="持久性"><a href="#持久性" class="headerlink" title="持久性"></a>持久性</h3><p>意味着在事务完成以后，该事务所对数据库所作的更改便持久的保存在数据库之中，并不会被回滚。</p>
 <p>完成的事务是系统永久的部分，对系统的影响是永久性的，该修改即使出现致命的系统故障也将一直保持。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Write-Ahead Logging：SQL Server中使用了WAL（Write-Ahead Logging）技术来保证事务日志的ACID特性，在数据写入到数据库之前，先写入到日志，再将日志记录变更到存储器中。</span><br></pre></td></tr></table></figure>
+
 <h2 id="事务隔离"><a href="#事务隔离" class="headerlink" title="事务隔离"></a>事务隔离</h2><p>当多个线程都开启事务操作数据库中的数据时，数据库系统要能进行隔离操作，以保证各个线程获取数据的准确性。</p>
 <h3 id="不用事务隔离带来的问题"><a href="#不用事务隔离带来的问题" class="headerlink" title="不用事务隔离带来的问题"></a>不用事务隔离带来的问题</h3><h4 id="更新丢失"><a href="#更新丢失" class="headerlink" title="更新丢失"></a>更新丢失</h4><p>此写彼写： 两事务同时更新，一个失败回滚覆盖另一个事务的更新。或事务1执行更新操作，在事务1结束前事务2也更新，则事务1的更新结果被事务2的覆盖了。</p>
 <ul>
@@ -73,8 +75,7 @@
 <p>所需的锁：排他写锁、共享读锁</p>
 <h4 id="串行化（Serializable）"><a href="#串行化（Serializable）" class="headerlink" title="串行化（Serializable）"></a>串行化（Serializable）</h4><p>含义解释：限制所有读写事务都必须串行化实行。它要求事务序列化执行，事务只能一个接着一个地执行，但不能并发执行。如果仅仅通过“行级锁”是无法实现事务序列化的，必须通过其他机制保证新插入的数据不会被刚执行查询操作的事务访问到。（一事务写时禁止其他事务读写、一事务读时禁止其他事务读写）</p>
 <p>所须的锁：范围锁或表锁</p>
-<h3 id="各隔离级别对各种异常的控制能力"><a href="#各隔离级别对各种异常的控制能力" class="headerlink" title="各隔离级别对各种异常的控制能力"></a>各隔离级别对各种异常的控制能力</h3><div class="table-container">
-<table>
+<h3 id="各隔离级别对各种异常的控制能力"><a href="#各隔离级别对各种异常的控制能力" class="headerlink" title="各隔离级别对各种异常的控制能力"></a>各隔离级别对各种异常的控制能力</h3><table>
 <thead>
 <tr>
 <th></th>
@@ -84,8 +85,7 @@
 <th>幻读</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>RU(读未提交)</td>
 <td>避免</td>
 <td></td>
@@ -113,13 +113,10 @@
 <td>避免</td>
 <td>避免</td>
 </tr>
-</tbody>
-</table>
-</div>
+</tbody></table>
 <p>四种隔离级别最高的是Serializable级别，最低的是Read uncommitted级别，当然级别越高，数据完整性越好，但执行效率就越低。</p>
 <p>像Serializable这样的级别，就是以锁表的方式(类似于Java多线程中的锁)使得其他的线程只能在锁外等待，所以平时选用何种隔离级别应该根据实际情况。</p>
-<h3 id="常见数据库的默认事务隔离级别"><a href="#常见数据库的默认事务隔离级别" class="headerlink" title="常见数据库的默认事务隔离级别"></a>常见数据库的默认事务隔离级别</h3><div class="table-container">
-<table>
+<h3 id="常见数据库的默认事务隔离级别"><a href="#常见数据库的默认事务隔离级别" class="headerlink" title="常见数据库的默认事务隔离级别"></a>常见数据库的默认事务隔离级别</h3><table>
 <thead>
 <tr>
 <th>数据库</th>
@@ -127,8 +124,7 @@
 <th>备注</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>MySQL</td>
 <td>可重复读（Repeatable Read）</td>
 <td>MySQL的Repeatable Read隔离级别也解决了幻读问题（通过Next-key lock加锁方法即范围锁解决不可重复读和幻读问题，如select * from t where a&gt;10会对key为[10,infinite）范围的行加锁，这样其他事务就不能对此范围内key对应的行更改）达到了SQL、SQL2标准中的Serializable级别。</td>
@@ -151,19 +147,20 @@
 <tr>
 <td>PostgreSQL</td>
 <td>读提交（Read Committed）</td>
+<td></td>
 </tr>
-</tbody>
-</table>
-</div>
+</tbody></table>
 <p>在MySQL数据库中查看当前事务的隔离级别：</p>
 <pre><code>select @@tx_isolation;
-</code></pre><p>在MySQL数据库中设置事务的隔离级别：</p>
+</code></pre>
+<p>在MySQL数据库中设置事务的隔离级别：</p>
 <pre><code>set  [glogal | session]  transaction isolation level 隔离级别名称; //设置全部连接或当前连接的事务隔离级别
 
 set tx_isolation=’隔离级别名称; //设置当前连接的事务隔离级别
-</code></pre><p><strong>设置数据库的隔离级别一定要是在开启事务之前！</strong></p>
+</code></pre>
+<p><strong>设置数据库的隔离级别一定要是在开启事务之前！</strong></p>
 <p>如果是使用JDBC对数据库的事务设置隔离级别的话，也应该是在调用Connection对象的setAutoCommit(false)方法之前。调用Connection对象的setTransactionIsolation(level)即可设置当前链接的隔离级别，至于参数level，可以使用Connection对象的字段：</p>
-<p><img src="/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E4%BA%8B%E5%8A%A1%E6%95%B0%E6%8D%AE%E5%BA%93%E7%89%B9%E6%80%A7%E4%B8%8E%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/img.png" alt></p>
+<p><img src="/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E4%BA%8B%E5%8A%A1%E6%95%B0%E6%8D%AE%E5%BA%93%E7%89%B9%E6%80%A7%E4%B8%8E%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/img.png"></p>
 <p>在JDBC中设置隔离级别的部分代码：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">try (Connection conn = JdbcUtils.getConnection()) &#123;</span><br><span class="line">  conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);</span><br><span class="line">  conn.setAutoCommit(false);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>后记：隔离级别的设置只对当前链接有效。对于使用MySQL命令窗口而言，一个窗口就相当于一个链接，当前窗口设置的隔离级别只对当前窗口中的事务有效；对于JDBC操作数据库来说，一个Connection对象相当于一个链接，而对于Connection对象设置的隔离级别只对该Connection对象有效，与其他链接Connection对象无关。</p>
@@ -180,7 +177,7 @@ set tx_isolation=’隔离级别名称; //设置当前连接的事务隔离级�
 <li>TransactionDefinition.PROPAGATION_NESTED：如果当前存在事务，则创建一个事务作为当前事务的嵌套事务来运行；如果当前没有事务，则新建事务。</li>
 </ul>
 <p>示例可参阅：<a target="_blank" rel="noopener" href="https://blog.csdn.net/f641385712/article/details/98642777">https://blog.csdn.net/f641385712/article/details/98642777</a></p>
-</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MySQL/">MySQL</a><a class="post-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><a class="post-meta__tags" href="/tags/%E4%BA%8B%E5%8A%A1/">事务</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2022/02/24/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8B%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5%E4%B8%8EGTID%E7%89%B9%E6%80%A7/"><i class="fa fa-chevron-left">  </i><span>数据库MySQL系列之主从同步与GTID特性</span></a></div><div class="next-post pull-right"><a href="/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8BInnoDB%E4%B8%ADMVCC%E6%B5%85%E6%8E%A2/"><span>数据库MySQL系列之MVCC浅探</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MySQL/">MySQL</a><a class="post-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><a class="post-meta__tags" href="/tags/%E4%BA%8B%E5%8A%A1/">事务</a></div><nav id="pagination"><div class="prev-post pull-left"><a href="/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8BInnoDB%E4%B8%ADMVCC%E6%B5%85%E6%8E%A2/"><i class="fa fa-chevron-left">  </i><span>数据库MySQL系列之MVCC浅探</span></a></div><div class="next-post pull-right"><a href="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/"><span>JAVA并发编程之这个&quot;破玩意儿&quot;叫锁</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
   clientID: '83850031ee87c27765eb',
   clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',
   repo: 'blob-comment',
