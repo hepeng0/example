@@ -1,0 +1,130 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="操作系统第一步之按下开机键"><meta name="keywords" content="操作系统"><meta name="author" content="何鹏 [smile.hepeng@qq.com]"><meta name="copyright" content="何鹏 [smile.hepeng@qq.com]"><title>操作系统第一步之按下开机键 | 沉默者</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.9.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.9.0"><meta name="format-detection" content="telephone=no"><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><script src="https://v1.hitokoto.cn/?encode=js&amp;charset=utf-8&amp;select=.footer_custom_text" defer></script><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"找不到您查询的内容:${query}"}},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  hexoVersion: '5.4.0'
+} </script><link rel="alternate" href="/atom.xml" title="沉默者" type="application/atom+xml">
+</head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="true"><div class="toggle-sidebar-info text-center"><span data-toggle="切换文章详情">切换站点概览</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AFBIOS%E4%B8%BB%E5%AF%BC"><span class="toc-number">1.</span> <span class="toc-text">为什么是BIOS主导</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84"><span class="toc-number">2.</span> <span class="toc-text">内存映射</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E6%A8%A1%E5%BC%8F%E4%B8%8B%E7%9A%84%E5%86%85%E5%AD%98%E5%88%86%E5%B8%83"><span class="toc-number">3.</span> <span class="toc-text">实模式下的内存分布</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BB%8EBIOS%E7%9A%84%E7%A8%8B%E5%BA%8F%E5%BC%80%E5%A7%8B%E6%89%A7%E8%A1%8C"><span class="toc-number">4.</span> <span class="toc-text">为什么从BIOS的程序开始执行</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#BIOS%E9%87%8C%E5%88%B0%E5%BA%95%E5%86%99%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-number">5.</span> <span class="toc-text">BIOS里到底写了什么？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#0x7c00-%E6%98%AF%E5%95%A5"><span class="toc-number">6.</span> <span class="toc-text">0x7c00 是啥</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%90%AF%E5%8A%A8%E5%8C%BA%E5%91%A2"><span class="toc-number">6.1.</span> <span class="toc-text">什么是启动区呢</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#BIOS%E6%89%BE%E5%88%B0%E5%90%AF%E5%8A%A8%E5%8C%BA%E5%90%8E%E5%81%9A%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-number">6.2.</span> <span class="toc-text">BIOS找到启动区后做什么？</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF-ox7c00"><span class="toc-number">6.3.</span> <span class="toc-text">为什么是 ox7c00</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%AF%E5%8A%A8%E5%8C%BA%E9%87%8C%E7%9A%84%E4%BB%A3%E7%A0%81%E5%86%99%E4%BA%86%E5%95%A5"><span class="toc-number">7.</span> <span class="toc-text">启动区里的代码写了啥</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">8.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E6%A1%A3"><span class="toc-number">9.</span> <span class="toc-text">参考文档</span></a></li></ol></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="https://img2.baidu.com/it/u=928705063,3876627980&amp;fm=26&amp;fmt=auto&amp;gp=0.jpg"></div><div class="author-info__name text-center">何鹏 [smile.hepeng@qq.com]</div><div class="author-info__description text-center">路漫漫其修远兮，吾将上下而求索</div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">文章</span><span class="pull-right">63</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">标签</span><span class="pull-right">52</span></a><a class="author-info-articles__categories article-meta" href="/categories"><span class="pull-left">分类</span><span class="pull-right">9</span></a></div></div></div><div id="content-outer"><div class="plain" id="top-container"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">沉默者</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">首页</a><a class="site-page" href="/archives">文章</a><a class="site-page" href="/tags">标签</a><a class="site-page" href="/categories">分类</a></span><span class="pull-right"><a class="site-page social-icon search"><i class="fa fa-search"></i><span> 搜索</span></a></span></div></div><div class="layout" id="content-inner"><article id="post"><div class="plain" id="post-title">操作系统第一步之按下开机键</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2022-04-18</time><span class="post-meta__separator">|</span><i class="fa fa-inbox" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"> 操作系统</a><span class="post-meta__separator">|</span><span class="post-meta-wordcount"><span>字数总计: </span><span class="word-count">4.2k</span><span class="post-meta__separator">|</span><span>阅读时长: 12 分钟</span></span></div><div class="article-container" id="post-content"><p>文档说明：转自<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247483867&idx=1&sn=76ece31324d32922a7cb9db129decd3f&chksm=c2c67b76f5b1f260bb459e12c029f8e6a7a813055811ab8ed794a3f36d0d7d50e66df27f4f0a&scene=21#wechat_redirect">全网最硬核讲解计算机的启动过程</a></p>
+<p>我们按下开机键后究竟发生了什么？</p>
+<p>当我们探寻这个问题的答案时，搜到的大多数是这样的描述：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BIOS 按照“启动顺序”，把控制权转交给排在第一位的存储设备：硬盘。</span><br><span class="line"></span><br><span class="line">然后在硬盘里寻找主引导记录的分区，这个分区告诉电脑操作系统在哪里，并把操作系统被加载到内存中，然后你就能看到经典的启动界面了，这个开机过程也就完成了。</span><br></pre></td></tr></table></figure>
+
+<p>这种描述简直太魔幻了</p>
+<ul>
+<li>为什么是 BIOS 主导这一切？</li>
+<li>怎么叫按照启动顺序？</li>
+<li>这个分区咋就被加载到内存了?</li>
+<li>又咋告诉电脑操作系统在哪里了？</li>
+</ul>
+<p><strong>前置知识</strong></p>
+<ul>
+<li>内存是存储数据的地方，给出一个地址信号，内存可以返回该地址所对应的数据。</li>
+<li>CPU 的工作方式就是不断从内存中取出指令，并执行。</li>
+<li>CPU 从内存的哪个地址取出指令，是由一个寄存器中的值决定的，这个值会不断进行 +1 操作，或者由某条跳转指令指定其值是多少。</li>
+</ul>
+<h3 id="为什么是BIOS主导"><a href="#为什么是BIOS主导" class="headerlink" title="为什么是BIOS主导"></a>为什么是BIOS主导</h3><p>都说开机后，BIOS 就开始运行自己的程序了，又硬件自检，又加载启动区的。</p>
+<p>我就不服了，为什么开机后是执行 BIOS 里的程序？<br>为啥不是内存里的？<br>为啥不是硬盘里的？</p>
+<p>好的，不要怀疑前置知识，CPU 的工作方式，就是不断从内存中取指令并执行，那为什么会说是执行 BIOS 里的程序呢？这就不得不说说内存映射了。</p>
+<h3 id="内存映射"><a href="#内存映射" class="headerlink" title="内存映射"></a>内存映射</h3><p><strong>CPU 地址总线的宽度决定了可访问的内存空间的大小</strong></p>
+<p>比如 16 位的 CPU 地址总线宽度为 20 位，地址范围是 1M。32 位的 CPU 地址总线宽度为 32 位，地址范围是 4G。你可以算算我们现在的 64 位机的地址范围。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">地址总线用来定位，数据总线用来传输。</span><br><span class="line">cpu的位宽 = 数据总线的位宽 = cpu内部通用寄存器的位宽 = 机器字长， 与地址总线位宽无关。</span><br></pre></td></tr></table></figure>
+
+<p>可是，可访问的内存空间这么大，并不等于说全都给内存使用，也就是说寻址的对象不只有内存，还有一些外设也要通过地址总线的方式去访问，那怎么去访问这些外设呢？就是在地址范围中划出一片片的区域，这块给显存使用，那块给硬盘控制器使用，等等 。</p>
+<p>这样说，其实就不符合我们的前置知识了，所以可以有一种不太正确的理解方式，那就是内存中的这块位置就是显存，那块位置就是硬盘控制器。我们在相应的位置上读取或者写入，就相当于在显存等外设的相应位置上读取或者写入，就好像这些外设的存储区域，被映射到了内存中的某一片区域一样。</p>
+<p>这样我们就不用管那些外设啦，关注点仍然是一个简简单单的内存。 </p>
+<p>这就是所谓的内存映射。</p>
+<h3 id="实模式下的内存分布"><a href="#实模式下的内存分布" class="headerlink" title="实模式下的内存分布"></a>实模式下的内存分布</h3><p>刚刚说到内存中划分出了一片一片区域给各种外设，那么问题自然就来了，哪块区域，分给了哪块外设了呢？如果是规定，那应该有一张表比较好吧。</p>
+<p>嗯没错，还真有，它就是实模式下的内存分布，笔者给它画了一张图：</p>
+<p><img src="/2022/04/18/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%AC%AC%E4%B8%80%E6%AD%A5%E4%B9%8B%E6%8C%89%E4%B8%8B%E5%BC%80%E6%9C%BA%E9%94%AE/img_1.png"></p>
+<p>实模式之后再解释，现在简单理解就是计算机刚开机的时候只有 1M 的内存可用。</p>
+<p>我们看到，内存被各种外设瓜分了，即映射在了内存中。</p>
+<p>BIOS 更狠，不但其空间被映射到了内存 0xC0000 - 0xFFFFF 位置，其里面的程序还占用了开头的一些区域，比如把中断向量表写在了内存开始的位置，真所谓先到先得啊。</p>
+<h3 id="为什么从BIOS的程序开始执行"><a href="#为什么从BIOS的程序开始执行" class="headerlink" title="为什么从BIOS的程序开始执行"></a>为什么从BIOS的程序开始执行</h3><p>现在我们知道 BIOS 里的信息被映射到了内存 0xC0000 - 0xFFFFF 位置，其中最为关键的系统 BIOS 被映射到了 0xF0000 - 0xFFFFF 位置。</p>
+<p>CPU 开机就是执行了这块区域的代码，然后巴拉巴拉一顿操作就开机了，那咋不从头开始执行？</p>
+<p>就是 CPU 从内存的哪个位置取出执行并执行呢？</p>
+<p><strong>是 PC 寄存器中的地址值</strong></p>
+<p>BIOS 程序的入口地址也就是开始地址是 0xFFFF0（人家就那么写的），也就是开机键一按下，一定有一个神奇的力量，将 pc 寄存器中的值变成 0xFFFF0，然后 CPU 就开始马不停蹄地跑了起来。</p>
+<p><strong>在你开机的一瞬间，CPU 的 PC 寄存器被强制初始化为 0xFFFF0。</strong></p>
+<p>如果再说具体些，CPU 将段基址寄存器 cs 初始化为 0xF000，将偏移地址寄存器 IP 初始化为 0xFFF0，根据<strong>实模式下的最终地址计算规则</strong>，将段基址左移 4 位，加上偏移地址，得到最终的物理地址也就是抽象出来的 PC 寄存器地址为 0xFFFF0。</p>
+<p>至于怎么强制初始化的，我觉得就越过了前置知识的边界了，况且各个厂商的硬件实现也不一定相同，有很多办法，也很简单。讨论起来意义就不大了。</p>
+<h3 id="BIOS里到底写了什么？"><a href="#BIOS里到底写了什么？" class="headerlink" title="BIOS里到底写了什么？"></a>BIOS里到底写了什么？</h3><p>我们现在知道了 BIOS 被映射到了内存的某个位置，并且开机一瞬间 CPU 强制将自己的 pc 寄存器初始化为 BIOS 程序的入口地址，从这里开始 CPU 马不停蹄地向前跑了起来。</p>
+<p>那接下来的问题似乎也非常自然地就问出来了，那就是 BIOS 程序里到底写了啥？ 把 BIOS 程序里的二进制信息全贴出来也不合适，我们分析一些主要的。</p>
+<p>我们首先还是来猜测，你看入口地址是 0xFFFF0，说明程序是从这执行的。</p>
+<p>实模式下内存的下边界就是 0xFFFFF，也就是只剩下 16 个字节的空间可以写代码了，这够干啥的呢？</p>
+<p>如果你有心的话应该能猜出，入口地址处可能是个跳转指令，跳到一个更大范围的空间去执行自己的任务。</p>
+<p>没错就是这样，0xFFFF0 处存储的机器指令，翻译成汇编语言是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmp far f000:e05b</span><br></pre></td></tr></table></figure>
+
+<p>意思是跳转到物理地址 0xfe05b 处开始执行（回忆下前面说的实模式下的地址计算方式）。</p>
+<p>地址 0xfe05b 处开始，便是 BIOS 真正发挥作用的代码了，这块代码会检测一些外设信息，并初始化好硬件，建立中断向量表并填写中断例程。</p>
+<p>这里的部分不要展开，这只是一段写死的程序而已，而且对理解开机启动过程无帮助，我们看后面精彩的部分，也就是 BIOS 的最后一项工作：<strong>加载启动区</strong>。</p>
+<h3 id="0x7c00-是啥"><a href="#0x7c00-是啥" class="headerlink" title="0x7c00 是啥"></a>0x7c00 是啥</h3><p>该较真的地方就是要较真，我绝对不会让<strong>加载</strong>这种魔幻的词出现在这里，我们现在就来把它拆解成人话。</p>
+<p>其实这个词也并不魔幻，加载在计算机领域就是指，<strong>把某设备上（比如硬盘）的程序复制到内存中的过程</strong>。</p>
+<p>那加载启动区这个过程，翻译过来就是，<strong>BIOS 程序把启动区的内容复制到了内存中的某个区域</strong>。</p>
+<p>好了，问题又自然出来了，启动区是哪里？被复制到了内存的哪个位置？然后呢？我们一个个来回答。</p>
+<h4 id="什么是启动区呢"><a href="#什么是启动区呢" class="headerlink" title="什么是启动区呢"></a>什么是启动区呢</h4><p>即使你不知道，你也应该能够猜到，一定是符合某种特征的一块区域，于是人们把它就叫做启动区了，那要符合什么特征呢？</p>
+<p>先不急，不知道你有没有过设置 BIOS 启动顺序的经历，通常有 U 盘启动、硬盘启动、软盘启动、光盘启动等等。</p>
+<p>BIOS 会按照顺序，读取这些启动盘中位于<strong>0 盘 0 道 1 扇区</strong>的内容。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">至于磁盘格式的划分，本篇就不做讲解了，总之对于内存，我们给出一个数字地址就能获取到该地址的数据，而对于磁盘，我们需要给出磁头、柱面、扇区这三个信息才能定位某个位置的数据，都是描述位置的一种方式而已。</span><br></pre></td></tr></table></figure>
+
+<p>接着说， 这 0 盘 0 道 1 扇区的内容一共有 512 个字节，<strong>如果末尾的两个字节分别是 0x55 和 0xaa，那么 BIOS 就会认为它是个启动区</strong>。 如果不是，那么按顺序继续向下个设备中寻找位于 0 盘 0 道 1 扇区的内容。如果最后发现都没找到符合条件的，那直接报出一个无启动区的错误。</p>
+<h4 id="BIOS找到启动区后做什么？"><a href="#BIOS找到启动区后做什么？" class="headerlink" title="BIOS找到启动区后做什么？"></a>BIOS找到启动区后做什么？</h4><p>前面说过了是加载，<strong>就是把这 512 个字节的内容，一个比特都不少的全部复制到内存的 0x7c00 这个位置</strong>。</p>
+<p>怎么复制的？ 当然是指令啦。</p>
+<p>哪些指令呢？这里我只能简单说指令集中是有 in 和 out 的，用来将外设中的数据复制到内存，或者将内存中的数据复制到外设，用这两个指令，以及外设给我们提供的读取方式，就能做到这一点啦。</p>
+<p>启动区内容此时已经被 BIOS 程序复制到了内存的 0x7c00 这个位置，然后呢？这个其实也不难猜测，启动区的内容就是我们自己写的代码了，复制到这里之后，就开始执行呗，之后我们的程序就接管了接下来的流程，BIOS 的使命也就结束啦。</p>
+<p>所以复制完之后，接下来应该是一个跳转指令吧！没错，正是这样，PC 寄存器的值变为 0x7c00，指令开始从这里执行。</p>
+<p>这样，我们就可以理解这句魔法语言了： </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BIOS 把控制权转交给排在第一位的存储设备。</span><br><span class="line"></span><br><span class="line">就是 BIOS 把启动区的 512 字节复制到内存的 0x7c00 位置，并且用一条跳转指令将 pc 寄存器的值指向 0x7c00。</span><br></pre></td></tr></table></figure>
+
+<h4 id="为什么是-ox7c00"><a href="#为什么是-ox7c00" class="headerlink" title="为什么是 ox7c00"></a>为什么是 ox7c00</h4><p>现在似乎就剩下一个问题了，为什么非要是 0x7c00 呢？好问题，当然答案也很简单，那就是人家 BIOS 开发团队就是这样定的，之后也不好改了，不然不兼容。为什么不好改？</p>
+<details><summary>我们看一个简单的启动区 512 字节的代码</summary>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">; hello-os</span><br><span class="line">; TAB=4</span><br><span class="line"></span><br><span class="line">  ORG  0x7c00   ;程序加载到内存的 0x7c00 这个位置</span><br><span class="line"></span><br><span class="line">;程序主体</span><br><span class="line"></span><br><span class="line">entry:</span><br><span class="line">  MOV  AX,0   ;初始化寄存器</span><br><span class="line">  MOV  SS,AX</span><br><span class="line">  MOV  SP,0x7c00</span><br><span class="line">  MOV  DS,AX   ;段寄存器初始化为 0</span><br><span class="line">  MOV  ES,AX</span><br><span class="line">  MOV  SI,msg</span><br><span class="line">putloop:</span><br><span class="line">  MOV  AL,[SI]</span><br><span class="line">  ADD  SI,1</span><br><span class="line">  CMP  AL,0   ;如果遇到 0 结尾的，就跳出循环不再打印新字符</span><br><span class="line">  JE  fin</span><br><span class="line">  MOV  AH,0x0e   ;指定文字</span><br><span class="line">  MOV  BX,15   ;指定颜色</span><br><span class="line">  INT  0x10   ;调用 BIOS 显示字符函数</span><br><span class="line">  JMP  putloop</span><br><span class="line">fin:</span><br><span class="line">  HLT</span><br><span class="line">  JMP  fin</span><br><span class="line">msg:</span><br><span class="line">  DB  0x0a,0x0a  ;换行、换行</span><br><span class="line">  DB  &quot;hello-os&quot;</span><br><span class="line">  DB  0x0a   ;换行</span><br><span class="line">  DB  0    ;0 结尾</span><br><span class="line"></span><br><span class="line">  RESB 0x7dfe-$   ;填充0到512字节</span><br><span class="line">  DB 0x55, 0xaa   ;可启动设备标识</span><br></pre></td></tr></table></figure>
+</details>
+
+<p>我们看第一行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ORG  0x7c00</span><br></pre></td></tr></table></figure>
+
+<p>这个数字就是刚刚说的启动区加载位置，这行汇编代码简单说就表示把下面的地址统统加上 0x7c00。正因为 BIOS 将启动区的代码加载到了这里，因此有了一个偏移量，所以所有写启动区代码的人就需要在开头写死一个这样的代码，不然全都串位了。</p>
+<p>然后正因为所有写操作系统的，启动区的第一行汇编代码都写死了这个数字，那 BIOS 开发者最初定的这个数字就不好改了，否则它得挨个联系各个操作系统的开发厂商，说唉我这个地址改一下哈，你们跟着改改。在公司推动另一个团队改个代码都得大费周折，想想看这样的推动得耗费多大人力。况且即使改了，之前的代码也都不兼容了，这不得被人们骂死啊。</p>
+<p>再看最后一行：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DB 0x55, 0xaa</span><br></pre></td></tr></table></figure>
+
+<p>这也验证了我们之前说的这 512 字节的最后两个字节得是 0x55 0xaa，BIOS 才会认为它是一个启动区，才会去加载它，仅此而已。</p>
+<p>回过头来说 0x7c00 这个值，它其实就是一个规定死的值，但还是会有人问，那必然有它的合理性吧。其实，我的解释也只能说是人家规定了这个值，后人们替他们解释这个合理性，并不是说当初人家就一定是这样想的，就好比我们做语文的阅读理解题一样。</p>
+<p>第一个 BIOS 开发团队是 IBM PC 5150 BIOS，当时被认为的第一个操作系统是 DOS 1.0 操作系统，BIOS 团队就假设是为它服务的。但操作系统还没出，BIOS 团队假设其操作系统需要的最小内存为 32 KB。BIOS 希望自己所加载的启动区代码尽量靠后，这样比较“安全”，不至于过早的被其他程序覆盖掉。可是如果仅仅留 512 字节又感觉太悬了，还有一些栈空间需要预留，那扩大到 1 KB 吧。这样 32 KB 的末尾是 0x8000，减去 1KB(0x400) ，刚好等于 0x7c00。哇塞，太精准了，这可以是一种解释方式。</p>
+<h3 id="启动区里的代码写了啥"><a href="#启动区里的代码写了啥" class="headerlink" title="启动区里的代码写了啥"></a>启动区里的代码写了啥</h3><p>启动区里的代码写了啥？就 512 字节就是全部操作系统内容了？</p>
+<p>这是一个好问题，512 个字节确实干不了啥，现在的操作系统怎么也得按 M 为单位算吧，512 个字节远远不够呢，那是怎么回事呢？</p>
+<p>其实我们可以按照之前的思路猜测，BIOS 用很少的代码就把 512 字节的启动区内容加载到了内存，并跳转过去开始执行。那按照这个套路，这 512 字节的启动区代码，是不是也可以把更多磁盘中存储的操作系统程序，加载到内存的某个位置，然后跳转过去呢？</p>
+<p>没错，就是这个套路。<strong>所以 BIOS 负责加载了启动区，而启动区又负责加载真正的操作系统内核</strong>，这配合默契吧？</p>
+<p>由于用于启动盘的磁盘是人家写操作系统的厂商制作的，俗称制作启动盘，所以他也肯定知道操作系统的核心代码存储在磁盘的哪个扇区，因此启动区就把这个扇区，以及之后的好多好多扇区（具体取决于操作系统有多大）都读到内存中，然后跳转到开始的程序开始的位置。跳转到哪里呢？这个就不像 0x7c00 这个数那么经典了，不同的操作系统肯定也不一样，也不用事先规定好，反正写操作系统的人给自己定一个就好了，别覆盖其他关键设备用到的区域就好。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>好了现在经过好几轮跳跳跳，终于跳到内核代码啦，我们来一起回顾一下：</p>
+<ul>
+<li>按下开机键，CPU 将 PC 寄存器的值强制初始化为 0xffff0，这个位置是 BIOS 程序的入口地址（一跳）</li>
+<li>该入口地址处是一个跳转指令，跳转到 0xfe05b 位置，开始执行（二跳）</li>
+<li>执行了一些硬件检测工作后，最后一步将启动区内容加载到内存 0x7c00，并跳转到这里（三跳）</li>
+<li>启动区代码主要是加载操作系统内核，并跳转到加载处（四跳）</li>
+</ul>
+<p>经过这连续的四次跳跃，终于来到了操作系统的世界了。</p>
+<p>剩下的内容，可以说是整个操作系统课程所讲述的原理： 分段、分页、建立中断、设备驱动、内存管理、进程管理、文件系统、用户态接口等等。</p>
+<h3 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h3><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/wwwlyj123321/article/details/99940786">cpu的位宽、操作系统的位宽和寻址能力的关系</a></p>
+<p><img src="/2022/04/18/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%AC%AC%E4%B8%80%E6%AD%A5%E4%B9%8B%E6%8C%89%E4%B8%8B%E5%BC%80%E6%9C%BA%E9%94%AE/img.png"></p>
+</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">操作系统</a></div><nav id="pagination"><div class="next-post pull-right"><a href="/2022/04/12/%E6%9D%82%E9%A1%B9%E7%AC%94%E8%AE%B0/PPT%E4%B8%8E%E8%B6%85%E7%BA%A7%E6%B1%BD%E8%BD%A6%E7%B3%BB%E5%88%97%E4%B9%8BUML%E7%B1%BB%E5%9B%BE/"><span>PPT与超级汽车系列之UML类图</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '83850031ee87c27765eb',
+  clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',
+  repo: 'blob-comment',
+  owner: 'hepeng0',
+  admin: 'hepeng0',
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN'
+})
+gitalk.render('gitalk-container')</script></div></div><footer><div class="layout" id="footer"><div class="copyright">&copy;2018 - 2022 By 何鹏 [smile.hepeng@qq.com]</div><div class="footer_custom_text">hitokoto</div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.9.0"></script><script src="/js/fancybox.js?version=1.9.0"></script><script src="/js/sidebar.js?version=1.9.0"></script><script src="/js/copy.js?version=1.9.0"></script><script src="/js/fireworks.js?version=1.9.0"></script><script src="/js/transition.js?version=1.9.0"></script><script src="/js/scroll.js?version=1.9.0"></script><script src="/js/head.js?version=1.9.0"></script><script src="/js/search/local-search.js"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+  $('#top-container').addClass('is-mobile')
+}</script><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">本地搜索</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章"></div></div></div><hr><div id="local-search-results"><div id="local-hits"></div><div id="local-stats"></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div></body></html>
