@@ -1,0 +1,770 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="操作系统初始化之进入内核前的苦力活"><meta name="keywords" content="操作系统"><meta name="author" content="何鹏 [smile.hepeng@qq.com]"><meta name="copyright" content="何鹏 [smile.hepeng@qq.com]"><title>操作系统初始化之进入内核前的苦力活 | 沉默者</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.9.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.9.0"><meta name="format-detection" content="telephone=no"><meta http-equiv="x-dns-prefetch-control" content="on"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.10.0/js/md5.min.js"></script><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><script src="https://v1.hitokoto.cn/?encode=js&amp;charset=utf-8&amp;select=.footer_custom_text" defer></script><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"找不到您查询的内容:${query}"}},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  hexoVersion: '5.4.0'
+} </script><link rel="alternate" href="/atom.xml" title="沉默者" type="application/atom+xml">
+</head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="true"><div class="toggle-sidebar-info text-center"><span data-toggle="切换文章详情">切换站点概览</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%80%E5%BC%80%E5%A7%8B%E7%9A%84%E4%B8%A4%E8%A1%8C%E4%BB%A3%E7%A0%81-%E5%8A%A0%E8%BD%BD%E5%90%AF%E5%8A%A8%E5%8C%BA"><span class="toc-number">1.</span> <span class="toc-text">最开始的两行代码-加载启动区</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">1.1.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E5%B7%B1%E7%BB%99%E8%87%AA%E5%B7%B1%E6%8C%AA%E4%B8%AA%E5%9C%B0%E5%84%BF-%E7%A7%BB%E5%8A%A8%E5%90%AF%E5%8A%A8%E5%8C%BA%E4%BB%A3%E7%A0%81%E6%AE%B5"><span class="toc-number">2.</span> <span class="toc-text">自己给自己挪个地儿-移动启动区代码段</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%84%E5%AD%98%E5%99%A8%E8%B5%8B%E5%80%BC"><span class="toc-number">2.1.</span> <span class="toc-text">寄存器赋值</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93-1"><span class="toc-number">2.2.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%81%9A%E5%A5%BD%E6%9C%80%E6%9C%80%E5%9F%BA%E7%A1%80%E7%9A%84%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C-%E5%86%85%E5%AD%98%E8%A7%84%E5%88%92"><span class="toc-number">3.</span> <span class="toc-text">做好最最基础的准备工作-内存规划</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AF%84%E5%AD%98%E5%99%A8%E8%B5%8B%E5%80%BC-1"><span class="toc-number">3.1.</span> <span class="toc-text">寄存器赋值</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93-2"><span class="toc-number">3.2.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%89%A9%E5%B1%95%E9%98%85%E8%AF%BB-%E4%B8%89%E7%A7%8D%E6%AE%B5%E5%AF%84%E5%AD%98%E5%99%A8%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-number">3.3.</span> <span class="toc-text">扩展阅读-三种段寄存器的作用</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8A%8A%E8%87%AA%E5%B7%B1%E5%9C%A8%E7%A1%AC%E7%9B%98%E9%87%8C%E7%9A%84%E5%85%B6%E4%BB%96%E9%83%A8%E5%88%86%E4%B9%9F%E6%94%BE%E5%88%B0%E5%86%85%E5%AD%98%E6%9D%A5"><span class="toc-number">4.</span> <span class="toc-text">把自己在硬盘里的其他部分也放到内存来</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%BB%E5%8F%96%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%85%A8%E9%83%A8%E4%BB%A3%E7%A0%81"><span class="toc-number">4.1.</span> <span class="toc-text">读取操作系统的全部代码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%95%B4%E4%B8%AA%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%9A%84%E7%BC%96%E8%AF%91%E8%BF%87%E7%A8%8B"><span class="toc-number">4.2.</span> <span class="toc-text">整个操作系统的编译过程</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Setup%E5%8A%A0%E8%BD%BD-%E8%BF%9B%E5%85%A5%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%E5%89%8D%E7%9A%84%E5%86%85%E5%AD%98%E9%87%8D%E8%A7%84%E5%88%92"><span class="toc-number">5.</span> <span class="toc-text">Setup加载-进入保护模式前的内存重规划</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E3%80%81%E7%A1%AC%E7%9B%98%E3%80%81%E6%98%BE%E5%8D%A1%E7%AD%89%E4%B8%B4%E6%97%B6%E6%95%B0%E6%8D%AE%E8%A6%86%E7%9B%96bootsect%E5%86%85%E5%AE%B9"><span class="toc-number">5.1.</span> <span class="toc-text">内存、硬盘、显卡等临时数据覆盖bootsect内容</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%B3%E9%97%AD%E4%B8%AD%E6%96%AD"><span class="toc-number">5.2.</span> <span class="toc-text">关闭中断</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#System%E6%A8%A1%E5%9D%97%E7%A7%BB%E5%8A%A8"><span class="toc-number">5.3.</span> <span class="toc-text">System模块移动</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Setup%E5%8A%A0%E8%BD%BD%E6%80%BB%E7%BB%93-%E6%96%B0%E7%9A%84%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80"><span class="toc-number">5.4.</span> <span class="toc-text">Setup加载总结-新的内存布局</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%88%E8%A7%A3%E5%86%B3%E6%AE%B5%E5%AF%84%E5%AD%98%E5%99%A8%E7%9A%84%E5%8E%86%E5%8F%B2%E5%8C%85%E8%A2%B1%E9%97%AE%E9%A2%98-%E8%BF%9B%E5%85%A5%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%E5%89%8D%E7%9A%84%E6%96%B0%E5%AF%BB%E5%9D%80%E6%96%B9%E5%BC%8F%E5%87%86%E5%A4%87"><span class="toc-number">6.</span> <span class="toc-text">先解决段寄存器的历史包袱问题-进入保护模式前的新寻址方式准备</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BD%93%E5%89%8D%E5%86%85%E5%AD%98%E5%9C%B0%E5%9D%80%E5%9B%9E%E9%A1%BE"><span class="toc-number">6.1.</span> <span class="toc-text">当前内存地址回顾</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%E4%B8%8B%E7%9A%84%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80"><span class="toc-number">6.2.</span> <span class="toc-text">保护模式下的物理地址</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%A8%E5%B1%80%E6%8F%8F%E8%BF%B0%E7%AC%A6gdt-amp-gdtr-%E5%AF%84%E5%AD%98%E5%99%A8"><span class="toc-number">6.3.</span> <span class="toc-text">全局描述符gdt &amp; gdtr 寄存器</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93-3"><span class="toc-number">6.4.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%8B%93%E5%B1%95"><span class="toc-number">6.5.</span> <span class="toc-text">拓展</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%AD%E8%A1%8C%E4%BB%A3%E7%A0%81%E8%BF%9B%E5%85%A5%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F"><span class="toc-number">7.</span> <span class="toc-text">六行代码进入保护模式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%89%93%E5%BC%80A20%E5%9C%B0%E5%9D%80%E7%BA%BF"><span class="toc-number">7.1.</span> <span class="toc-text">打开A20地址线</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%AD%E6%96%AD%E9%87%8D%E5%AE%9A%E4%B9%89"><span class="toc-number">7.2.</span> <span class="toc-text">中断重定义</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A8%A1%E5%BC%8F%E5%88%87%E6%8D%A2"><span class="toc-number">7.3.</span> <span class="toc-text">模式切换</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%B7%B3%E8%BD%AC%E5%88%B0System"><span class="toc-number">7.4.</span> <span class="toc-text">跳转到System</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%87%8D%E6%96%B0%E8%AE%BE%E7%BD%AE%E4%B8%80%E9%81%8D-idt-%E5%92%8C-gdt-%E7%BB%99%E6%8F%8F%E8%BF%B0%E7%AC%A6%E8%A1%A8%E6%8C%AA%E4%B8%AA%E5%9C%B0%E5%84%BF"><span class="toc-number">8.</span> <span class="toc-text">重新设置一遍 idt 和 gdt - 给描述符表挪个地儿</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AE%BE%E7%BD%AE%E4%B8%AD%E6%96%AD%E6%8F%8F%E8%BF%B0%E7%AC%A6%E8%A1%A8"><span class="toc-number">8.1.</span> <span class="toc-text">设置中断描述符表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AE%BE%E7%BD%AE%E5%85%A8%E5%B1%80%E6%8F%8F%E8%BF%B0%E7%AC%A6%E8%A1%A8"><span class="toc-number">8.2.</span> <span class="toc-text">设置全局描述符表</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93-4"><span class="toc-number">8.3.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Intel-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B8%A4%E6%9D%BF%E6%96%A7-%E5%88%86%E6%AE%B5%E5%92%8C%E5%88%86%E9%A1%B5"><span class="toc-number">9.</span> <span class="toc-text">Intel 内存管理两板斧-分段和分页</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%A1%B5%E6%9C%BA%E5%88%B6"><span class="toc-number">9.1.</span> <span class="toc-text">分页机制</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%A1%B5%E5%86%85%E5%AD%98%E7%BB%93%E6%9E%84"><span class="toc-number">9.2.</span> <span class="toc-text">分页内存结构</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%A1%B5%E8%A1%A8%E5%85%B7%E4%BD%93%E6%98%A0%E5%B0%84%E5%86%85%E5%AD%98"><span class="toc-number">9.3.</span> <span class="toc-text">页表具体映射内存</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%8B%93%E5%B1%95-%E5%90%8D%E8%AF%8D%E6%A2%B3%E7%90%86"><span class="toc-number">9.4.</span> <span class="toc-text">拓展 - 名词梳理</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%9B%E5%85%A5-main-c-%E4%B9%8B%E5%89%8D%E7%9A%84%E6%9C%80%E5%90%8E%E4%B8%80%E5%93%86%E5%97%A6"><span class="toc-number">10.</span> <span class="toc-text">进入 main.c 之前的最后一哆嗦</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93-5"><span class="toc-number">10.1.</span> <span class="toc-text">总结</span></a></li></ol></li></ol></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="https://img2.baidu.com/it/u=928705063,3876627980&amp;fm=26&amp;fmt=auto&amp;gp=0.jpg"></div><div class="author-info__name text-center">何鹏 [smile.hepeng@qq.com]</div><div class="author-info__description text-center">路漫漫其修远兮，吾将上下而求索</div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">文章</span><span class="pull-right">64</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">标签</span><span class="pull-right">52</span></a><a class="author-info-articles__categories article-meta" href="/categories"><span class="pull-left">分类</span><span class="pull-right">9</span></a></div></div></div><div id="content-outer"><div class="plain" id="top-container"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">沉默者</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">首页</a><a class="site-page" href="/archives">文章</a><a class="site-page" href="/tags">标签</a><a class="site-page" href="/categories">分类</a></span><span class="pull-right"><a class="site-page social-icon search"><i class="fa fa-search"></i><span> 搜索</span></a></span></div></div><div class="layout" id="content-inner"><article id="post"><div class="plain" id="post-title">操作系统初始化之进入内核前的苦力活</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2022-04-19</time><span class="post-meta__separator">|</span><i class="fa fa-inbox" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"> 操作系统</a><span class="post-meta__separator">|</span><span class="post-meta-wordcount"><span>字数总计: </span><span class="word-count">13.5k</span><span class="post-meta__separator">|</span><span>阅读时长: 44 分钟</span></span></div><div class="article-container" id="post-content"><p>本系列转自<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/mp/appmsgalbum?__biz=Mzk0MjE3NDE0Ng==&action=getalbum&album_id=2123743679373688834&scene=173&from_msgid=2247499734&from_itemidx=1&count=3&nolastread=1#wechat_redirect">操作系统源码系列</a></p>
+<p>会以一个读小说的心态，从开机启动后的代码执行顺序，阅读和赏析 Linux 0.11 全部核心代码，了解操作系统的技术细节和设计思想。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_0.png"></p>
+<h3 id="最开始的两行代码-加载启动区"><a href="#最开始的两行代码-加载启动区" class="headerlink" title="最开始的两行代码-加载启动区"></a>最开始的两行代码-加载启动区</h3><p>在<a href="/2022/04/18/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%AC%AC%E4%B8%80%E6%AD%A5%E4%B9%8B%E6%8C%89%E4%B8%8B%E5%BC%80%E6%9C%BA%E9%94%AE/" title="操作系统第一步之按下开机键">操作系统第一步之按下开机键</a> 一文中， 我们简单介绍了操作系统启动区加载的过程，回顾一下：</p>
+<ul>
+<li>按下开机键，CPU 将 PC 寄存器的值强制初始化为 0xffff0，这个位置是 BIOS 程序的入口地址（一跳）</li>
+<li>该入口地址处是一个跳转指令，跳转到 0xfe05b 位置，开始执行（二跳）</li>
+<li>执行了一些硬件检测工作后，最后一步将启动区内容加载到内存 0x7c00，并跳转到这里（三跳）</li>
+<li>启动区代码主要是加载操作系统内核，并跳转到加载处（四跳）</li>
+</ul>
+<p>当你按下开机键的那一刻，在主板上提前写死的固件程序 BIOS 会将硬盘中启动区的 512 字节的数据，原封不动复制到内存中的 0x7c00 这个位置，并跳转到那个位置进行执行。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img.png"></p>
+<p>启动区的定义非常简单，只要硬盘中的 0 盘 0 道 1 扇区的 512 个字节的最后两个字节分别是 0x55 和 0xaa，那么 BIOS 就会认为它是个启动区。</p>
+<p>所以对于我们理解操作系统而言，此时的 BIOS 仅仅就是个代码搬运工，把 512 字节的二进制数据从硬盘搬运到了内存中而已。</p>
+<p><strong>所以作为操作系统的开发人员，仅仅需要把操作系统最开始的那段代码，编译并存储在硬盘的 0 盘 0 道 1 扇区即可</strong>。</p>
+<p>之后 BIOS 会帮我们把它放到内存里，并且跳过去执行。</p>
+<p>而 Linux-0.11 的最开始的代码，就是这个用汇编语言写的 bootsect.s，位于 boot 文件夹下。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_1.png"></p>
+<p>通过编译，这个 bootsect.s 会被编译成二进制文件，存放在启动区的第一扇区。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_2.png"></p>
+<p>随后就会如刚刚所说，由 BIOS 搬运到内存的 0x7c00 这个位置，而 CPU 也会从这个位置开始，不断往后一条一条语句无脑地执行下去。</p>
+<p>那我们的梦幻之旅，就从这个文件的第一行代码开始啦！</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mov ax,0x07c0</span><br><span class="line">mov ds,ax</span><br></pre></td></tr></table></figure>
+
+<p>这段代码是用汇编语言写的，含义是<strong>把 0x07c0 这个值复制到 ax 寄存器里，再将 ax 寄存器里的值复制到 ds 寄存器</strong>里。</p>
+<details><summary>立即数不能直接赋给段寄存器</summary>
+
+<p>因为CPU的设计里面一次指令只能读写内存一次的流程设计。</p>
+<p>立即数直接赋值给段寄存器的话，相当于读一次内存，一次内存流程了，再写一次内存，二次内存流程了。</p>
+</details>
+
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_3.png"></p>
+<p>那其实这一番折腾的结果就是:</p>
+<details><summary>让 ds 这个寄存器里的值变成了 0x07c0</summary>
+
+<p>ds 是一个 16 位的段寄存器，具体表示数据段寄存器，在内存寻址时充当段基址的作用。</p>
+<p>啥意思呢？就是当我们之后用汇编语言写一个内存地址时，实际上仅仅是写了偏移地址，比如：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mov ax, [0x0001]</span><br></pre></td></tr></table></figure>
+
+<p>实际上相当于</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mov ax, [ds:0x0001]</span><br></pre></td></tr></table></figure>
+
+<p>ds 是默认加上的，表示在 ds 这个段基址处，往后再偏移 0x0001 单位，将这个位置的内存数据，复制到 ax 寄存器中。</p>
+<p>这个 ds 被赋值为了 0x07c0，由于 x86 为了让自己在 16 位这个实模式下能访问到 20 位的地址线这个历史因素（不了解这个的就先别纠结为啥了），所以段基址要先左移四位。</p>
+<p>那 0x07c0 左移四位就是 0x7c00，那这就刚好和这段代码被 BIOS 加载到的内存地址 0x7c00 一样了。</p>
+</details>
+
+
+<p>也就是说，之后再写的代码，里面访问的数据的内存地址，都先默认加上 0x7c00，再去内存中寻址。</p>
+<p>为啥统一加上 0x7c00 这个数呢？这很好解释，BIOS 规定死了把操作系统代码加载到内存 0x7c00，那么里面的各种数据自然就全都被偏移了这么多，所以把数据段寄存器 ds<br>设置为这个值，方便了以后通过这种基址的方式访问内存里的数据。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_4.png"></p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>BIOS 将操作系统代码（启动区）加载到内存 0x7c00，然后通过 mov 指令将默认的数据段寄存器（ds 寄存器）的值改为 0x07c0 方便以后的基址寻址方式。</p>
+<h3 id="自己给自己挪个地儿-移动启动区代码段"><a href="#自己给自己挪个地儿-移动启动区代码段" class="headerlink" title="自己给自己挪个地儿-移动启动区代码段"></a>自己给自己挪个地儿-移动启动区代码段</h3><h4 id="寄存器赋值"><a href="#寄存器赋值" class="headerlink" title="寄存器赋值"></a>寄存器赋值</h4><p>接下来我们带着这两行代码，继续往下看几行。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mov ax,0x07c0</span><br><span class="line">mov ds,ax</span><br><span class="line">mov ax,0x9000</span><br><span class="line">mov es,ax</span><br><span class="line">mov cx,#256</span><br><span class="line">sub si,si</span><br><span class="line">sub di,di</span><br><span class="line">rep movw</span><br></pre></td></tr></table></figure>
+
+<p>此时 ds 寄存器的值已经是 0x07c0 了，然后又通过同样的方式将 es 寄存器的值变成 0x9000，接着又把 cx 寄存器的值变成<br>256（代码里确实是用十进制表示的，与其他地方有些不一致，不过无所谓）。</p>
+<figure class="highlight plaintext"><figcaption><span>si,si```表示```si</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">经过这些指令后，以下几个寄存器分别被附上了指定的值，我们梳理一下</span><br><span class="line"></span><br><span class="line">* 数据段寄存器： ds = 0x07c0</span><br><span class="line">* 附加段寄存器： es = 0x9000</span><br><span class="line">* 普通寄存器： cx = 256</span><br><span class="line">* 源变址： si = 0</span><br><span class="line">* 目的变址： di = 0</span><br><span class="line"></span><br><span class="line">![](./操作系统初始化之进入内核前的苦力活/img_5.png)</span><br><span class="line"></span><br><span class="line">#### 复制启动区</span><br><span class="line"></span><br><span class="line">干嘛要给这些毫不相干的寄存器附上值呢？其实就是为下一条指令服务的，就是</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>rep movw</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">其中 **rep 表示重复执行后面的指令**。</span><br><span class="line"></span><br><span class="line">而后面的指令 **movw 表示复制一个字**（word 16位），那其实就是不断重复地复制一个字。</span><br><span class="line"></span><br><span class="line">那下面自然就有三连问：</span><br><span class="line"></span><br><span class="line">**重复执行多少次呢？** 是 cx 寄存器中的值，也就是 256 次。</span><br><span class="line"></span><br><span class="line">**从哪复制到哪呢？** 是从 ds:si 处复制到 es:di 处。</span><br><span class="line"></span><br><span class="line">**一次复制多少呢？** 刚刚说过了，复制一个字，16 位，也就是两个字节。</span><br><span class="line"></span><br><span class="line">上面是直译，那把这段话翻译成更人话的方式讲出来就是，**将内存地址 0x7c00 处开始往后的 512 字节的数据，原封不动复制到 0x90000 处**。</span><br><span class="line"></span><br><span class="line">![](./操作系统初始化之进入内核前的苦力活/img_6.png)</span><br><span class="line"></span><br><span class="line">没错，就是这么折腾了一下。现在，操作系统最开头的代码，已经被挪到了 **0x90000** 这个位置了。</span><br><span class="line"></span><br><span class="line">#### 跳转到新的地址</span><br><span class="line"></span><br><span class="line">再往后是一个**跳转**指令。</span><br><span class="line"></span><br><span class="line">```shell</span><br><span class="line">jmpi go,0x9000</span><br><span class="line">go: </span><br><span class="line">  mov ax,cs</span><br><span class="line">  mov ds,ax</span><br></pre></td></tr></table></figure>
+
+<p><strong>jmpi 是一个段间跳转指令，表示跳转到 0x9000:go 处执行</strong>。</p>
+<p>还记得上一讲说的 <strong>段基址 : 偏移地址</strong> 这种格式的内存地址要如何计算吧？段基址仍然要先左移四位，因此结论就是跳转到 <strong>0x90000 + go</strong> 这个内存地址处执行。</p>
+<p>再说 go，go 就是一个<strong>标签</strong>，最终编译成机器码的时候会被翻译成一个值，这个值就是 go 这个<strong>标签在文件内的偏移地址</strong>。</p>
+<p>这个偏移地址再加上 0x90000，就刚好是 go 标签后面那段代码 <code>mov ax,cs</code> 此时所在的内存地址了。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_7.png"></p>
+<p>那假如 mov ax,cx 这行代码位于最终编译好后的二进制文件的 0x08 处，那 go 就等于 0x08，而最终 CPU 跳转到的地址就是 0x90008 处。</p>
+<h4 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h4><p>到此为止，其实就是<strong>一段 512 字节的代码和数据，从硬盘的启动区先是被移动到了内存 0x7c00 处，然后又立刻被移动到 0x90000 处，并且跳转到此处往后再稍稍偏移 go<br>这个标签所代表的偏移地址处</strong>，也就是 mov ax,cs 这行指令的位置。</p>
+<h3 id="做好最最基础的准备工作-内存规划"><a href="#做好最最基础的准备工作-内存规划" class="headerlink" title="做好最最基础的准备工作-内存规划"></a>做好最最基础的准备工作-内存规划</h3><h4 id="寄存器赋值-1"><a href="#寄存器赋值-1" class="headerlink" title="寄存器赋值"></a>寄存器赋值</h4><p>操作系统的代码最开头的 512 字节的数据，从硬盘的启动区先是被移动到了内存 0x7c00 处，然后又立刻被移动到 0x90000 处，并且跳转到此处往后再稍稍偏移 go 这个标签所代表的偏移地址处。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_8.png"></p>
+<p>那我们接下来，就继续把我们的目光放在 go 这个标签的位置，跟着 CPU 的步伐往后看。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">go: mov ax,cs</span><br><span class="line">    mov ds,ax</span><br><span class="line">    mov es,ax</span><br><span class="line">    mov ss,ax</span><br><span class="line">    mov sp,#0xFF00</span><br></pre></td></tr></table></figure>
+
+<p>这段代码的直接意思很容易理解，就是</p>
+<ul>
+<li>cs 寄存器的值分别复制给 ds、es 和 ss 寄存器，</li>
+<li>把 0xFF00 给了 sp 寄存器。</li>
+</ul>
+<details><summary>CPU寄存器图</summary>
+
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_9.png"></p>
+</details>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cs 寄存器表示代码段寄存器，CPU 当前正在执行的代码在内存中的位置，就是由 cs:ip 这组寄存器配合指向的，其中 cs 是基址，ip 是偏移地址。</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>之前执行过一个段间跳转指令<code>jmpi go,0x9000</code>, 所以现在<strong>cs寄存器里的值就是0x9000，ip 寄存器里的值是 go 这个标签的偏移地址</strong>。</p>
+</li>
+<li><p>ds 为数据段寄存器，之前我们说过了，当时它被复制为 0x07c0，是因为之前的代码在 0x7c00 处，现在代码已经被挪到了 0x90000 处，所以现在自然又改赋值为 0x9000 了。</p>
+</li>
+<li><p>es 是扩展段寄存器，仅仅是个扩展，不是主角，先不用理它。</p>
+</li>
+<li><p>ss 为<strong>栈段寄存器</strong>，后面要配合栈基址寄存器 sp 来表示此时的栈顶地址。而此时 sp 寄存器被赋值为了 0xFF00 了，所以<strong>目前的栈顶地址就是 ss:sp 所指向的地址<br>0x9FF00 处</strong>。</p>
+<img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_11.png" class title="实模式下的内存分布图">
+<ul>
+<li>回顾一下实模式下的内存分布图，栈顶位置被赋值为了0x9FF00，几乎是基本内存距离代码段最远的位置，所以栈向下发展就很难撞见代码，也就比较安全。<br><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_10.png"></li>
+<li>这也是为什么给栈顶地址设置为这个值的原因，其实只需要离代码的位置远远的即可。</li>
+</ul>
+</li>
+</ul>
+<h4 id="总结-2"><a href="#总结-2" class="headerlink" title="总结"></a>总结</h4><p>其实到这里，操作系统的一些最最最最基础的准备工作，就做好了。都做了些啥事呢？</p>
+<ol>
+<li>代码从硬盘移到内存，又从内存挪了个地方，放在了 0x90000 处</li>
+<li>数据段寄存器 ds 和代码段寄存器 cs 此时都被设置为了 0x9000，也就为跳转代码和访问内存数据，奠定了同一个内存的基址地址，方便了跳转和内存访问，因为仅仅需要指定偏移地址即可了。</li>
+<li>栈顶地址被设置为了 0x9FF00，具体表现为栈段寄存器 ss 为 0x9000，栈基址寄存器 sp 为 0xFF00。栈是向下发展的，这个栈顶地址 0x9FF00 要远远大于此时代码所在的位置<br>0x90000，也就比较安全。</li>
+</ol>
+<p>拔高一下，这一部分其实就是把<strong>代码段寄存器 cs，数据段寄存器 ds，栈段寄存器 ss 和栈基址寄存器 sp</strong> 分别设置好了值，方便后续使用。</p>
+<p>再拔高一下，其实操作系统在做的事情，就是给如何访问代码，如何访问数据，如何访问栈进行了一下<strong>内存的初步规划</strong>。其中访问代码和访问数据的规划方式就是设置了一个<strong>基址</strong>而已，访问栈就是把**<br>栈顶指针**指向了一个远离代码位置的地方而已。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_12.png"></p>
+<h4 id="扩展阅读-三种段寄存器的作用"><a href="#扩展阅读-三种段寄存器的作用" class="headerlink" title="扩展阅读-三种段寄存器的作用"></a>扩展阅读-三种段寄存器的作用</h4><p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_13.png"></p>
+<ul>
+<li>CS 是代码段寄存器，就是执行代码的时候带着这里存的基地址。</li>
+<li>DS 是数据段寄存器，就是访问数据的时候带着这里的基地址。</li>
+<li>SS 是栈段寄存器，就是访问栈时带着这里的基地址。</li>
+</ul>
+<h3 id="把自己在硬盘里的其他部分也放到内存来"><a href="#把自己在硬盘里的其他部分也放到内存来" class="headerlink" title="把自己在硬盘里的其他部分也放到内存来"></a>把自己在硬盘里的其他部分也放到内存来</h3><p>至此，短短几句代码，操作系统已经完成了最最基础的准备工作，也即初步做了一次内存规划， 从 CPU 的角度看，访问内存其实也就是三块地方而已</p>
+<ul>
+<li>数据段</li>
+<li>代码段</li>
+<li>栈</li>
+</ul>
+<p>内存规划中：</p>
+<ul>
+<li>将数据段寄存器 ds 和代码段寄存器 cs 设置为了 0x9000，方便代码的跳转与数据的访问。</li>
+<li>将栈顶地址 ss:sp 设置在了离代码的位置 0x90000 足够遥远的 0x9FF00，保证栈向下发展不会轻易撞见代码的位置。</li>
+</ul>
+<h4 id="读取操作系统的全部代码"><a href="#读取操作系统的全部代码" class="headerlink" title="读取操作系统的全部代码"></a>读取操作系统的全部代码</h4><p>做好这些基础工作后，接下来就又该新的一翻折腾了，我们接着往下看。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">load_setup:</span><br><span class="line">mov dx,#0x0000      ; drive 0, head 0</span><br><span class="line">mov cx,#0x0002      ; sector 2, track 0</span><br><span class="line">mov bx,#0x0200      ; address = 512, in 0x9000</span><br><span class="line">mov ax,#0x0200+4    ; service 2, nr of sectors</span><br><span class="line">int 0x13            ; read it</span><br><span class="line">jnc ok_load_setup       ; ok - continue</span><br><span class="line">mov dx,#0x0000</span><br><span class="line">mov ax,#0x0000      ; reset the diskette</span><br><span class="line">int 0x13</span><br><span class="line">jmp load_setup</span><br><span class="line"></span><br><span class="line">ok_load_setup:</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>这里有两个 int<br>指令我们还没见过，<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247498208&idx=1&sn=b784f8b4e627ebd1bfb9810d194fdb80&chksm=c2c5834df5b20a5bdee331002bfc61c90eb468da325bf67abeef780c303a9f51c8543e1a5981&scene=21#wechat_redirect">这个 int 是汇编指令，可不是高级语言的整型变量哟</a></p>
+<p>int 0x13 表示<strong>发起 0x13 号中断</strong>，这条指令上面给 dx、cx、bx、ax 赋值都是作为这个中断程序的参数。</p>
+<p>这个中断发起后，CPU 会<strong>通过这个中断号，去寻找对应的中断处理程序的入口地址，并跳转过去执行</strong>，逻辑上就相当于执行了一个函数。</p>
+<p>而 0x13 号中断的处理程序是 BIOS 提前给我们写好的，是<strong>读取磁盘</strong>的相关功能的函数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">之后真正进入操作系统内核后，中断处理程序是需要我们自己去重新写的</span><br></pre></td></tr></table></figure>
+
+<p>本段代码的注释已经写的很明确了，直接说最终的作用吧，就是<strong>将硬盘的第 2 个扇区开始，把数据加载到内存 0x90200 处，共加载 4 个扇区</strong>，图示其实就是这样。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_14.png"></p>
+<p>如果复制成功，就跳转到 ok_load_setup 这个标签，如果失败，则会不断重复执行这段代码，也就是重试。</p>
+<p>直接看成功后跳转的 ok_load_setup 这个标签后的代码。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ok_load_setup:</span><br><span class="line">    ...</span><br><span class="line">    mov ax,#0x1000</span><br><span class="line">    mov es,ax       ; segment of 0x10000</span><br><span class="line">    call read_it</span><br><span class="line">    ...</span><br><span class="line">    jmpi 0,0x9020</span><br></pre></td></tr></table></figure>
+
+<p>这段代码省略了很多非主逻辑的代码，比如在屏幕上输出 Loading system … 这个字符串等。</p>
+<p>剩下的主要代码就都写在这里了，就这么几行，其作用是<strong>把从硬盘第 6 个扇区开始往后的 240 个扇区，加载到内存 0x10000 处</strong>，和之前的从硬盘捣腾到内存是一个道理。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_15.png"></p>
+<p>至此，整个操作系统的<strong>全部代码</strong>，就已经全部从硬盘中，被搬迁到内存来了。</p>
+<p>然后又通过一个熟悉的段间跳转指令 jmpi 0,0x9020，跳转到 <strong>0x90200</strong> 处，就是硬盘第二个扇区开始处的内容。</p>
+<h4 id="整个操作系统的编译过程"><a href="#整个操作系统的编译过程" class="headerlink" title="整个操作系统的编译过程"></a>整个操作系统的编译过程</h4><p>在分析硬盘第二个分区前，我们先简单看下炒作系统整个编译过程，就是通过 Makefile 和 build.c 配合完成的，最终会：</p>
+<ol>
+<li>把 bootsect.s 编译成 bootsect 放在硬盘的 1 扇区。</li>
+<li>把 setup.s 编译成 setup 放在硬盘的 2~5 扇区。</li>
+<li>把剩下的全部代码（head.s 作为开头）编译成 system 放在硬盘的随后 240 个扇区。</li>
+</ol>
+<p>所以整个路径就是这样的：</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_16.png"></p>
+<p>所以，我们即将跳转到的内存中的 0x90200 处的代码，就是从硬盘第二个扇区开始处加载到内存的。</p>
+<p>第二个扇区的最开始处，那也就是 setup.s 文件的第一行代码咯。</p>
+<p>在<strong>操作系统刚刚开始建立的时候，那是完全自己安排前前后后的关系</strong><br>，一个字节都不能偏，就是这么强耦合，需要小心翼翼，需要大脑时刻保持清醒，规划好自己写的代码被编译并存储在硬盘的哪个位置，而随后又会被加载到内存的哪个位置，不能错乱。</p>
+<h3 id="Setup加载-进入保护模式前的内存重规划"><a href="#Setup加载-进入保护模式前的内存重规划" class="headerlink" title="Setup加载-进入保护模式前的内存重规划"></a>Setup加载-进入保护模式前的内存重规划</h3><p>至此，操作系统已经完成了各种从硬盘到内存的加载，以及内存到内存的复制， 整个 bootsect.s 的使命就完成了，也是我们品读完的第一个操作系统源码文件。</p>
+<h4 id="内存、硬盘、显卡等临时数据覆盖bootsect内容"><a href="#内存、硬盘、显卡等临时数据覆盖bootsect内容" class="headerlink" title="内存、硬盘、显卡等临时数据覆盖bootsect内容"></a>内存、硬盘、显卡等临时数据覆盖bootsect内容</h4><p>之后便跳转到了 0x90200 这个位置开始执行，这个位置处的代码就是位于 setup.s 的开头，我们接着来看。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">start:</span><br><span class="line">    mov ax,#0x9000  ; this is done in bootsect already, but...</span><br><span class="line">    mov ds,ax</span><br><span class="line">    mov ah,#0x03    ; read cursor pos</span><br><span class="line">    xor bh,bh</span><br><span class="line">    int 0x10        ; save it in known place, con_init fetches</span><br><span class="line">    mov [0],dx      ; it from 0x90000.</span><br></pre></td></tr></table></figure>
+
+<p>又有个 int 0x10 指令, 它也是触发 BIOS 提供的<strong>显示服务中断</strong>处理程序，而 <strong>ah</strong> 寄存器被赋值为 0x03 表示显示服务里具体的<strong>读取光标位置功能</strong></p>
+<p>这个 int 0x10 中断程序执行完毕并返回时，<strong>dx 寄存器里的值表示光标的位置</strong>，具体说来其高八位 dh 存储了行号，低八位 dl 存储了列号。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_17.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">计算机在加电自检后会自动初始化到文字模式，在这种模式下，一屏幕可以显示 25 行，每行 80 个字符，也就是 80 列。</span><br></pre></td></tr></table></figure>
+
+<p>那下一步 mov [0],dx 就是把这个光标位置存储在 [0] 这个内存地址处。</p>
+<p>注意，前面我们说过，这个内存地址仅仅是偏移地址，还需要加上 ds 这个寄存器里存储的段基址，最终的内存地址是在 0x90000 处，这里存放着光标的位置，以便之后在初始化控制台的时候用到。</p>
+<p>所以从这里也可以看出，这和我们平时调用一个方法没什么区别，只不过这里的寄存器的用法相当于入参和返回值，这里的 0x10 中断号相当于方法名。</p>
+<details><summary>再接下来的几行代码，也是调用一个 BIOS 中断获取点什么信息，然后存储在内存中某个位置</summary>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">比如获取内存信息。</span><br><span class="line">; Get memory size (extended mem, kB)</span><br><span class="line">    mov ah,#0x88</span><br><span class="line">    int 0x15</span><br><span class="line">    mov [2],ax</span><br><span class="line">获取显卡显示模式。</span><br><span class="line">; Get video-card data:</span><br><span class="line">    mov ah,#0x0f</span><br><span class="line">    int 0x10</span><br><span class="line">    mov [4],bx      ; bh = display page</span><br><span class="line">    mov [6],ax      ; al = video mode, ah = window width</span><br><span class="line">检查显示方式并取参数</span><br><span class="line">; check for EGA/VGA and some config parameters</span><br><span class="line">    mov ah,#0x12</span><br><span class="line">    mov bl,#0x10</span><br><span class="line">    int 0x10</span><br><span class="line">    mov [8],ax</span><br><span class="line">    mov [10],bx</span><br><span class="line">    mov [12],cx</span><br><span class="line">获取第一块硬盘的信息。</span><br><span class="line">; Get hd0 data</span><br><span class="line">    mov ax,#0x0000</span><br><span class="line">    mov ds,ax</span><br><span class="line">    lds si,[4*0x41]</span><br><span class="line">    mov ax,#INITSEG</span><br><span class="line">    mov es,ax</span><br><span class="line">    mov di,#0x0080</span><br><span class="line">    mov cx,#0x10</span><br><span class="line">    rep</span><br><span class="line">    movsb</span><br><span class="line">获取第二块硬盘的信息。</span><br><span class="line">; Get hd1 data</span><br><span class="line">    mov ax,#0x0000</span><br><span class="line">    mov ds,ax</span><br><span class="line">    lds si,[4*0x46]</span><br><span class="line">    mov ax,#INITSEG</span><br><span class="line">    mov es,ax</span><br><span class="line">    mov di,#0x0090</span><br><span class="line">    mov cx,#0x10</span><br><span class="line">    rep</span><br><span class="line">    movsb</span><br></pre></td></tr></table></figure>
+
+</details>
+
+<p>我们就没必要细琢磨了，对操作系统的理解作用不大，只需要知道最终存储在内存中的信息是什么，在什么位置，就好了，之后会用到他们的</p>
+<table>
+<thead>
+<tr>
+<th>内存地址</th>
+<th>长度(字节)</th>
+<th>名称</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x90000</td>
+<td>2</td>
+<td>光标位置</td>
+</tr>
+<tr>
+<td>0x90002</td>
+<td>2</td>
+<td>扩展内存数</td>
+</tr>
+<tr>
+<td>0x90004</td>
+<td>2</td>
+<td>显示页面</td>
+</tr>
+<tr>
+<td>0x90006</td>
+<td>1</td>
+<td>显示模式</td>
+</tr>
+<tr>
+<td>0x90007</td>
+<td>1</td>
+<td>字符列数</td>
+</tr>
+<tr>
+<td>0x90008</td>
+<td>2</td>
+<td>未知</td>
+</tr>
+<tr>
+<td>0x9000A</td>
+<td>1</td>
+<td>显示内存</td>
+</tr>
+<tr>
+<td>0x9000B</td>
+<td>1</td>
+<td>显示状态</td>
+</tr>
+<tr>
+<td>0x9000C</td>
+<td>2</td>
+<td>显卡特性参数</td>
+</tr>
+<tr>
+<td>0x9000E</td>
+<td>1</td>
+<td>屏幕行数</td>
+</tr>
+<tr>
+<td>0x9000F</td>
+<td>1</td>
+<td>屏幕列数</td>
+</tr>
+<tr>
+<td>0x90080</td>
+<td>16</td>
+<td>硬盘1参数表</td>
+</tr>
+<tr>
+<td>0x90090</td>
+<td>16</td>
+<td>硬盘2参数表</td>
+</tr>
+<tr>
+<td>0x901FC</td>
+<td>2</td>
+<td>根设备号</td>
+</tr>
+</tbody></table>
+<p>由于之后很快就会用 c 语言进行编程，虽然汇编和 c 语言也可以用变量的形式进行传递数据，但这需要编译器在链接时做一些额外的工作，所以这么多数据更方便的还是<strong>双方共同约定一个内存地址</strong><br>，我往这里存，你从这里取，就完事了。这恐怕是最最原始和直观的变量传递的方式了。</p>
+<h4 id="关闭中断"><a href="#关闭中断" class="headerlink" title="关闭中断"></a>关闭中断</h4><p>把这些信息存储好之后，操作系统又要做什么呢？我们继续往下看。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cli         ; no interrupts allowed ;</span><br></pre></td></tr></table></figure>
+
+<p>就一行 cli，表示关闭中断的意思。</p>
+<p>因为后面我们要把原本是 BIOS 写好的中断向量表给覆盖掉，也就是给破坏掉了，写上我们自己的中断向量表，所以这个时候是不允许中断进来的。</p>
+<h4 id="System模块移动"><a href="#System模块移动" class="headerlink" title="System模块移动"></a>System模块移动</h4><p>继续看</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">; first we move the system to it&#x27;s rightful place</span><br><span class="line">    mov ax,#0x0000</span><br><span class="line">    cld         ; &#x27;direction&#x27;=0, movs moves forward</span><br><span class="line">do_move:</span><br><span class="line">    mov es,ax       ; destination segment</span><br><span class="line">    add ax,#0x1000</span><br><span class="line">    cmp ax,#0x9000</span><br><span class="line">    jz  end_move</span><br><span class="line">    mov ds,ax       ; source segment</span><br><span class="line">    sub di,di</span><br><span class="line">    sub si,si</span><br><span class="line">    mov cx,#0x8000</span><br><span class="line">    rep movsw</span><br><span class="line">    jmp do_move</span><br><span class="line">; then we load the segment descriptors</span><br><span class="line">end_move:</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+
+<p>看到后面那个 rep movsw 熟不熟悉, 同前面的原理一样，也是做了个内存复制操作，最终的结果是，把内存地址 0x10000 处开始往后一直到 0x90000 的内容，统统复制到内存的最开始的 0<br>位置，大概就是这么个效果。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_18.png"></p>
+<h4 id="Setup加载总结-新的内存布局"><a href="#Setup加载总结-新的内存布局" class="headerlink" title="Setup加载总结-新的内存布局"></a>Setup加载总结-新的内存布局</h4><p>由于之前的各种加载和复制，导致内存看起来很乱，是时候进行一波取舍和整理了，我们重新梳理一下此时的内存布局。</p>
+<ul>
+<li>栈顶地址仍然是 0x9FF00 没有改变。</li>
+<li>0x90000 开始往上的位置，原来是 bootsect 和 setup 程序的代码，现 bootsect 的一部分代码在已经被操作系统为了记录内存、硬盘、显卡等一些临时存放的数据给覆盖了一部分。</li>
+<li>内存最开始的 <strong>0 到 0x80000 这 512K 被 system 模块给占用</strong>了，之前讲过，这个 system 模块就是除了 bootsect 和 setup<br>之外的全部程序链接在一起的结果，可以理解为<strong>操作系统的全部</strong>。</li>
+</ul>
+<p>那么现在的内存布局就是这个样子。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_19.png"></p>
+<p>好了，记住上面的图就好了，这回是不是又重新清晰起来了？<strong>之前的什么 0x7c00，已经是过去式了</strong>，赶紧忘掉它，向前看！</p>
+<p>接下来，就要进行有点技术含量的工作了，那就是<strong>模式的转换</strong>，需要<strong>从现在的 16 位的实模式转变为之后 32 位的保护模式</strong>，这是一项大工程！</p>
+<h3 id="先解决段寄存器的历史包袱问题-进入保护模式前的新寻址方式准备"><a href="#先解决段寄存器的历史包袱问题-进入保护模式前的新寻址方式准备" class="headerlink" title="先解决段寄存器的历史包袱问题-进入保护模式前的新寻址方式准备"></a>先解决段寄存器的历史包袱问题-进入保护模式前的新寻址方式准备</h3><h4 id="当前内存地址回顾"><a href="#当前内存地址回顾" class="headerlink" title="当前内存地址回顾"></a>当前内存地址回顾</h4><p>经过Setup模块执行，操作系统内存被重新划分，并且之后的很长一段时间内存布局相对稳定，目前它长这样：</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_20.png"></p>
+<p>0 地址开始处存放着操作系统的全部代码吗，也就是 system 模块，0x90000 位置处往后的几十个字节存放着一些设备的信息，方便以后使用。</p>
+<table>
+<thead>
+<tr>
+<th>内存地址</th>
+<th>长度(字节)</th>
+<th>名称</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x90000</td>
+<td>2</td>
+<td>光标位置</td>
+</tr>
+<tr>
+<td>0x90002</td>
+<td>2</td>
+<td>扩展内存数</td>
+</tr>
+<tr>
+<td>0x90004</td>
+<td>2</td>
+<td>显示页面</td>
+</tr>
+<tr>
+<td>0x90006</td>
+<td>1</td>
+<td>显示模式</td>
+</tr>
+<tr>
+<td>0x90007</td>
+<td>1</td>
+<td>字符列数</td>
+</tr>
+<tr>
+<td>0x90008</td>
+<td>2</td>
+<td>未知</td>
+</tr>
+<tr>
+<td>0x9000A</td>
+<td>1</td>
+<td>显示内存</td>
+</tr>
+<tr>
+<td>0x9000B</td>
+<td>1</td>
+<td>显示状态</td>
+</tr>
+<tr>
+<td>0x9000C</td>
+<td>2</td>
+<td>显卡特性参数</td>
+</tr>
+<tr>
+<td>0x9000E</td>
+<td>1</td>
+<td>屏幕行数</td>
+</tr>
+<tr>
+<td>0x9000F</td>
+<td>1</td>
+<td>屏幕列数</td>
+</tr>
+<tr>
+<td>0x90080</td>
+<td>16</td>
+<td>硬盘1参数表</td>
+</tr>
+<tr>
+<td>0x90090</td>
+<td>16</td>
+<td>硬盘2参数表</td>
+</tr>
+<tr>
+<td>0x901FC</td>
+<td>2</td>
+<td>根设备号</td>
+</tr>
+</tbody></table>
+<p>是不是十分清晰？不过别高兴得太早，清爽的内存布局，是方便后续操作系统的大显身手！</p>
+<p>接下来就要进行真正的第一项大工程了，那就是模式的转换，需要从现在的 16 位的实模式转变为之后 32 位的保护模式。</p>
+<h4 id="保护模式下的物理地址"><a href="#保护模式下的物理地址" class="headerlink" title="保护模式下的物理地址"></a>保护模式下的物理地址</h4><p>每次讲这里都十分的麻烦，因为这是 <strong>x86 的历史包袱</strong>问题，现在的 CPU 几乎都是支持 32 位模式甚至 64 位模式了，很少有还仅仅停留在 16 位的实模式下的 CPU。</p>
+<p>所以我们要<strong>为了这个历史包袱，写一段模式转换的代码</strong>，如果 Intel CPU 被重新设计而不用考虑兼容性，那么今天的代码将会减少很多甚至不复存在。</p>
+<p>关于实模式和保护模式的区别，可以参考文档<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/352843177">实模式和保护模式区别及寻址方式</a></p>
+<p>继续看 setup.s 文件中的代码</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">lidt  idt_48      ; load idt with 0,0</span><br><span class="line">lgdt  gdt_48      ; load gdt with whatever appropriate</span><br><span class="line"></span><br><span class="line">idt_48:</span><br><span class="line">    .word   0     ; idt limit=0</span><br><span class="line">    .word   0,0   ; idt base=0L</span><br></pre></td></tr></table></figure>
+
+<p>上来就是两行看不懂的指令，要理解这两条指令，就涉及到实模式和保护模式的第一个区别了。</p>
+<p>目前，我们还处于实模式下，这个模式的CPU计算物理地址的方式为： <strong>段基址左移四位，再加上偏移地址</strong>。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_21.png"></p>
+<p>当 CPU 切换到保护模式后，同样的代码，内存地址的计算方式还<strong>不一样</strong>。</p>
+<p>刚刚那个 ds 寄存器里存储的值，在实模式下叫做<strong>段基址</strong>，在保护模式下叫<strong>段选择子</strong>。</p>
+<p><strong>段选择子里存储着段描述符的索引</strong>。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_22.png"></p>
+<p>通过段描述符索引，可以从 <strong>全局描述符表 gdt</strong> 中找到一个段描述符，段描述符里存储着段基址。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_23.png"></p>
+<p>段基址取出来，再和偏移地址相加，就得到了物理地址，整个过程如下。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_24.png"></p>
+<p>总结一下就是： <strong>段寄存器（比如 ds、ss、cs）里存储的是段选择子，段选择子去全局描述符表中寻找段描述符，从中取出段基址</strong>。</p>
+<h4 id="全局描述符gdt-amp-gdtr-寄存器"><a href="#全局描述符gdt-amp-gdtr-寄存器" class="headerlink" title="全局描述符gdt &amp; gdtr 寄存器"></a>全局描述符gdt &amp; gdtr 寄存器</h4><p>那问题自然就出来了，全局描述符表（gdt）长什么样？它在哪？怎么让 CPU 知道它在哪？</p>
+<p>先说说它在哪？ 在内存中呗。</p>
+<p>那么怎么告诉 CPU 全局描述符表（gdt）在内存中的什么位置呢？</p>
+<p>答案是由操作系统把这个位置信息存储在一个叫 gdtr 的寄存器中。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_25.png"></p>
+<p>怎么存呢？就是刚刚那条指令。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lgdt    gdt_48</span><br></pre></td></tr></table></figure>
+
+<p>其中 <strong>lgdt</strong> 就表示把<strong>后面的值（gdt_48）放在 gdtr 寄存器</strong>中，gdt_48 标签，我们看看它长什么样。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">gdt_48:</span><br><span class="line">    .word   0x800       ; gdt limit=2048, 256 GDT entries</span><br><span class="line">    .word   512+gdt,0x9 ; gdt base = 0X9xxxx</span><br></pre></td></tr></table></figure>
+
+<p>可以看到这个标签位置处表示一个 48 位的数据，其中高 32 位存储着的正是全局描述符表 gdt 的内存地址</p>
+<p><strong>0x90200 + gdt</strong></p>
+<p>gdt 是个标签，表示在本文件内的偏移量，而本文件是 setup.s，编译后是放在 0x90200 这个内存地址的，还记得吧？所以要加上 0x90200 这个值。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_26.png"></p>
+<p>那 gdt 这个标签处，就是全局描述符表在内存中的真正数据了。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">gdt:</span><br><span class="line">    .word   0,0,0,0     ; dummy</span><br><span class="line"></span><br><span class="line">    .word   0x07FF      ; 8Mb - limit=2047 (2048*4096=8Mb)</span><br><span class="line">    .word   0x0000      ; base address=0</span><br><span class="line">    .word   0x9A00      ; code read/exec</span><br><span class="line">    .word   0x00C0      ; granularity=4096, 386</span><br><span class="line"></span><br><span class="line">    .word   0x07FF      ; 8Mb - limit=2047 (2048*4096=8Mb)</span><br><span class="line">    .word   0x0000      ; base address=0</span><br><span class="line">    .word   0x9200      ; data read/write</span><br><span class="line">    .word   0x00C0      ; granularity=4096, 386</span><br></pre></td></tr></table></figure>
+
+<p>具体细节不用关心，跟我看重点。</p>
+<p>根据刚刚的段描述符格式。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_27.png"></p>
+<p>可以看出目前全局描述符表有三个段描述符，第一个为空，第二个是代码段描述符（type=code），第三个是数据段描述符（type=data）。</p>
+<p>第二个和第三个段描述符的段基址都是 0，也就是之后在逻辑地址转换物理地址的时候，通过段选择子查找到无论是代码段还是数据段，取出的段基址都是<br>0，那么物理地址将直接等于程序员给出的逻辑地址（准确说是逻辑地址中的偏移地址）。先记住这点就好。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_28.png"></p>
+<p>具体段描述符的细节还有很多，就不展开了，比如这里的高 22 位就表示它是代码段还是数据段。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_29.png"></p>
+<h4 id="总结-3"><a href="#总结-3" class="headerlink" title="总结"></a>总结</h4><p>整体而言，操作系统设置了个全局描述符表 gdt，为后面切换到保护模式后，能去那里寻找到段描述符，然后拼凑成最终的物理地址，就这个作用。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_31.png"></p>
+<p>我们看看目前的内存布局:</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_30.png"></p>
+<p>这里我把 idtr 寄存器也画出来了，这个是中断描述符表，其原理和全局描述符表一样。</p>
+<ul>
+<li>全局描述符表是让段选择子去里面寻找段描述符用的，</li>
+<li>而中断描述符表是用来在发生中断时，CPU 拿着中断号去中断描述符表中寻找中断处理程序的地址，找到后就跳到相应的中断程序中去执行，具体我们后面遇到了再说。</li>
+</ul>
+<p>当然，还有很多段描述符，作用不仅仅是转换成最终的物理地址，不过这是后话了。</p>
+<h4 id="拓展"><a href="#拓展" class="headerlink" title="拓展"></a>拓展</h4><p>段描述符结构和详细说明如下(Intel 手册)</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_34.png"></p>
+<p>保护模式下逻辑地址到线性地址（不开启分页时就是物理地址）的转化</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_35.png"></p>
+<h3 id="六行代码进入保护模式"><a href="#六行代码进入保护模式" class="headerlink" title="六行代码进入保护模式"></a>六行代码进入保护模式</h3><p>自此，我们解决了向前兼容(X86)实模式寻址的历史包袱问题, 但这知识进入保护模式前准备工作中的其中一个。</p>
+<h4 id="打开A20地址线"><a href="#打开A20地址线" class="headerlink" title="打开A20地址线"></a>打开A20地址线</h4><p>我们接着往下看，代码仍然是 setup.s 中的:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mov al,#0xD1        ; command write</span><br><span class="line">out #0x64,al</span><br><span class="line">mov al,#0xDF        ; A20 on</span><br><span class="line">out #0x60,al</span><br></pre></td></tr></table></figure>
+
+<p>这段代码的意思是，<strong>打开 A20 地址线</strong>。</p>
+<details><summary>到底什么是 A20 地址线呢</summary>
+
+<p>简单理解，这一步就是为了突破地址信号线 20 位的宽度，变成 32 位可用。这是由于 8086 CPU 只有 20 位的地址线，所以如果程序给出 21<br>位的内存地址数据，那多出的一位就被忽略了，比如如果经过计算得出一个内存地址为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1 0000 00000000 00000000</span><br></pre></td></tr></table></figure>
+
+<p>那实际上内存地址相当于 0，因为高位的那个 1 被忽略了，地方不够。</p>
+<p>当 CPU 到了 32 位时代之后，由于要考虑<strong>兼容性</strong>，还必须保持一个只能用 20 位地址线的模式，所以如果你不手动开启的话，即使地址线已经有 32 位了，仍然会限制只能使用其中的 20 位。</p>
+<p>具体可参考文档<a target="_blank" rel="noopener" href="http://www.techbulo.com/703.html">A20 地址线问题全面解析</a></p>
+</details>
+
+<h4 id="中断重定义"><a href="#中断重定义" class="headerlink" title="中断重定义"></a>中断重定义</h4><p>接下来的一段代码，你完全完全不用看，但为了防止你一直记挂在心上，我给你截出来说道说道，这样以后我说完全不用看的代码时，你就真的可以放宽心完全不看了。</p>
+<details><summary>就是这一大坨，还有 Linus 自己的注释</summary>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">; well, that went ok, I hope. Now we have to reprogram the interrupts :-(</span><br><span class="line">; we put them right after the intel-reserved hardware interrupts, at</span><br><span class="line">; int 0x20-0x2F. There they won&#x27;t mess up anything. Sadly IBM really</span><br><span class="line">; messed this up with the original PC, and they haven&#x27;t been able to</span><br><span class="line">; rectify it afterwards. Thus the bios puts interrupts at 0x08-0x0f,</span><br><span class="line">; which is used for the internal hardware interrupts as well. We just</span><br><span class="line">; have to reprogram the 8259&#x27;s, and it isn&#x27;t fun.</span><br><span class="line"></span><br><span class="line">    mov al,#0x11        ; initialization sequence</span><br><span class="line">    out #0x20,al        ; send it to 8259A-1</span><br><span class="line">    .word   0x00eb,0x00eb       ; jmp $+2, jmp $+2</span><br><span class="line">    out #0xA0,al        ; and to 8259A-2</span><br><span class="line">    .word   0x00eb,0x00eb</span><br><span class="line">    mov al,#0x20        ; start of hardware int&#x27;s (0x20)</span><br><span class="line">    out #0x21,al</span><br><span class="line">    .word   0x00eb,0x00eb</span><br><span class="line">    mov al,#0x28        ; start of hardware int&#x27;s 2 (0x28)</span><br><span class="line">    out #0xA1,al</span><br><span class="line">    .word   0x00eb,0x00eb</span><br><span class="line">    mov al,#0x04        ; 8259-1 is master</span><br><span class="line">    out #0x21,al</span><br><span class="line">    .word   0x00eb,0x00eb</span><br><span class="line">    mov al,#0x02        ; 8259-2 is slave</span><br><span class="line">    out #0xA1,al</span><br><span class="line">    .word   0x00eb,0x00eb</span><br><span class="line">    mov al,#0x01        ; 8086 mode for both</span><br><span class="line">    out #0x21,al</span><br><span class="line">    .word   0x00eb,0x00eb</span><br><span class="line">    out #0xA1,al</span><br><span class="line">    .word   0x00eb,0x00eb</span><br><span class="line">    mov al,#0xFF        ; mask off all interrupts for now</span><br><span class="line">    out #0x21,al</span><br><span class="line">    .word   0x00eb,0x00eb</span><br><span class="line">    out #0xA1,al</span><br></pre></td></tr></table></figure>
+
+</details>
+
+<p>这里是对<strong>可编程中断控制器 8259 芯片</strong>进行的编程。</p>
+<p>因为中断号是不能冲突的， Intel 把 0 到 0x19 号中断都作为<strong>保留中断</strong>，比如 0 号中断就规定为<strong>除零异常</strong>，软件自定义的中断都应该放在这之后，但是 IBM 在原 PC<br>机中搞砸了，跟保留中断号发生了冲突，以后也没有纠正过来，所以我们得重新对其进行编程，不得不做，却又一点意思也没有。</p>
+<p>所以我们也不必在意，只要知道重新编程之后，8259 这个芯片的引脚与中断号的对应关系，变成了如下的样子就好。</p>
+<table>
+<thead>
+<tr>
+<th>PIC请求号</th>
+<th>中断号</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>IRQ0</td>
+<td>0x20</td>
+<td>时钟中断</td>
+</tr>
+<tr>
+<td>IRQ1</td>
+<td>0x21</td>
+<td>键盘中断</td>
+</tr>
+<tr>
+<td>IRQ2</td>
+<td>0x22</td>
+<td>接连从芯片</td>
+</tr>
+<tr>
+<td>IRQ3</td>
+<td>0x23</td>
+<td>串口2</td>
+</tr>
+<tr>
+<td>IRQ4</td>
+<td>0x24</td>
+<td>串口1</td>
+</tr>
+<tr>
+<td>IRQ5</td>
+<td>0x25</td>
+<td>并口2</td>
+</tr>
+<tr>
+<td>IRQ6</td>
+<td>0x26</td>
+<td>软盘驱动器</td>
+</tr>
+<tr>
+<td>IRQ7</td>
+<td>0x27</td>
+<td>并口1</td>
+</tr>
+<tr>
+<td>IRQ8</td>
+<td>0x28</td>
+<td>实时钟中断</td>
+</tr>
+<tr>
+<td>IRQ9</td>
+<td>0x29</td>
+<td>保留</td>
+</tr>
+<tr>
+<td>IRQ10</td>
+<td>0x2a</td>
+<td>保留</td>
+</tr>
+<tr>
+<td>IRQ11</td>
+<td>0x2b</td>
+<td>保留</td>
+</tr>
+<tr>
+<td>IRQ12</td>
+<td>0x2c</td>
+<td>鼠标中断</td>
+</tr>
+<tr>
+<td>IRQ13</td>
+<td>0x2d</td>
+<td>数学协处理器</td>
+</tr>
+<tr>
+<td>IRQ14</td>
+<td>0x2e</td>
+<td>硬盘中断</td>
+</tr>
+<tr>
+<td>IRQ15</td>
+<td>0x2f</td>
+<td>保留</td>
+</tr>
+</tbody></table>
+<h4 id="模式切换"><a href="#模式切换" class="headerlink" title="模式切换"></a>模式切换</h4><p>好了，接下来的一步，就是真正切换模式的一步了，从代码上看就两行。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mov ax,#0x0001  ; protected mode (PE) bit</span><br><span class="line">lmsw ax      ; This is it;</span><br><span class="line">jmpi 0,8     ; jmp offset 0 of segment 8 (cs)</span><br></pre></td></tr></table></figure>
+
+<p>前两行，将 cr0 这个寄存器的位 0 置 1，模式就从实模式切换到保护模式了。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_32.png"></p>
+<p>所以真正的模式切换十分简单，重要的是之前做的准备工作。</p>
+<h4 id="跳转到System"><a href="#跳转到System" class="headerlink" title="跳转到System"></a>跳转到System</h4><p>再往后，又是一个段间跳转指令 jmpi，后面的 8 表示 cs（代码段寄存器）的值，0 表示偏移地址。</p>
+<p>请注意，此时已经是保护模式了，之前也说过，保护模式下内存寻址方式变了，段寄存器里的值被当做段选择子。</p>
+<p>回顾下段选择子的模样。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_33.png"></p>
+<p>8 用二进制表示就是<code>00000,0000,0000,1000</code></p>
+<p>对照上面段选择子的结构，可以知道<strong>描述符索引值是 1，也就是要去全局描述符表（gdt）中找第一项段描述符</strong>。</p>
+<p>还记得全局描述符的具体内容吗？</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_28.png"></p>
+<ul>
+<li>第 0 项是空值，</li>
+<li>第一项被表示为代码段描述符，是个可读可执行的段，</li>
+<li>第二项为数据段描述符，是个可读可写段</li>
+</ul>
+<p>不过他们的段基址都是 0。</p>
+<p>这里取的就是这个代码段描述符，段基址是 0，偏移也是 0，那加一块就还是 0 咯，所以最终这个跳转指令，就是跳转到内存地址的 0 地址处，开始执行。</p>
+<p>零地址处是什么呢？还是回顾之前的内存布局图。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_30.png"></p>
+<p>就是操作系统全部代码的 system 这个大模块，system 模块怎么生成的呢？</p>
+<p>由 Makefile 文件可知，是由 head.s 和 main.c 以及其余各模块的操作系统代码合并来的，可以理解为操作系统的全部核心代码编译后的结果。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">tools/system: boot/head.o init/main.o \</span><br><span class="line">    $(ARCHIVES) $(DRIVERS) $(MATH) $(LIBS)</span><br><span class="line">    $(LD) $(LDFLAGS) boot/head.o init/main.o \</span><br><span class="line">    $(ARCHIVES) \</span><br><span class="line">    $(DRIVERS) \</span><br><span class="line">    $(MATH) \</span><br><span class="line">    $(LIBS) \</span><br><span class="line">    -o tools/system &gt; System.map</span><br></pre></td></tr></table></figure>
+
+<p>所以，接下来，我们就要重点阅读 head.s 了。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_36.png"></p>
+<p>这也是 boot 文件夹下的最后一个由汇编写就的源代码文件，而且是汇编写的令人头疼的代码。</p>
+<p>head.s 这个文件仅仅是为了顺利进入由后面的 c 语言写就的 main.c 做的准备，所以咬咬牙看完这个之后，我们就终于可以进入 c 语言的世界了！也终于可以看到我们熟悉的 main 函数了！</p>
+<p>在那里，操作系统真正秀操作的地方，才刚刚开始！</p>
+<h3 id="重新设置一遍-idt-和-gdt-给描述符表挪个地儿"><a href="#重新设置一遍-idt-和-gdt-给描述符表挪个地儿" class="headerlink" title="重新设置一遍 idt 和 gdt - 给描述符表挪个地儿"></a>重新设置一遍 idt 和 gdt - 给描述符表挪个地儿</h3><p>至此，CPU 进入了 32 位保护模式，并且跳转到了 system 模块。</p>
+<p>那接下来，我们就品品，正式进入 c 语言写的 main.c 之前的 head.s 究竟写了点啥？</p>
+<p>head.s 文件很短，我们一点点品。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">_pg_dir:</span><br><span class="line">_startup_32:</span><br><span class="line">    mov eax,0x10</span><br><span class="line">    mov ds,ax</span><br><span class="line">    mov es,ax</span><br><span class="line">    mov fs,ax</span><br><span class="line">    mov gs,ax</span><br><span class="line">    lss esp,_stack_start</span><br></pre></td></tr></table></figure>
+
+<p>注意到开头有个标号 <strong>_pg_dir</strong>。先留个心眼，这个表示<strong>页目录</strong>，之后在设置<strong>分页机制</strong>时，页目录会存放在这里，也会覆盖这里的代码。</p>
+<p>再往下连续五个 mov 操作，分别给 <strong>ds、es、fs、gs 这几个段寄存器赋值为 0x10</strong>，根据段描述符结构解析，表示<strong>这几个段寄存器的值为指向全局描述符表中的第二个段描述符（数据段描述符）</strong>。</p>
+<p>最后 lss 指令相当于让 ss:esp 这个<strong>栈顶指针指向了 _stack_start 这个标号的位置</strong>。还记得图里的那个原来的栈顶指针在哪里吧？往上翻一下，<strong>0x9FF00，现在要变咯</strong>。</p>
+<p>这个 stack_start 标号定义在了很久之后才会讲到的 sched.c 里，我们这里拿出来分析一波。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">long user_stack[4096 &gt;&gt; 2];</span><br><span class="line"></span><br><span class="line">struct</span><br><span class="line">&#123;</span><br><span class="line">  long *a;</span><br><span class="line">  short b;</span><br><span class="line">&#125;</span><br><span class="line">stack_start = &#123;&amp;user_stack[4096 &gt;&gt; 2], 0x10&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>这啥意思呢？</p>
+<p>首先，stack_start 结构中的高位 8 字节是 0x10，将会赋值给 ss 栈段寄存器，低位 16 字节是 user_stack 这个数组的最后一个元素的地址值，将其赋值给 esp 寄存器。</p>
+<p>赋值给 ss 的 0x10 仍然按照保护模式下的段选择子去解读，其指向的是全局描述符表中的第二个段描述符（数据段描述符），段基址是 0。</p>
+<p>赋值给 esp 寄存器的就是 user_stack 数组的最后一个元素的内存地址值，那最终的栈顶地址，也指向了这里（user_stack + 0），后面的压栈操作，就是往这个新的栈顶地址处压咯。</p>
+<p>继续往下看</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">call setup_idt ;设置中断描述符表</span><br><span class="line">call setup_gdt ;设置全局描述符表</span><br><span class="line">mov eax,10h</span><br><span class="line">mov ds,ax</span><br><span class="line">mov es,ax</span><br><span class="line">mov fs,ax</span><br><span class="line">mov gs,ax</span><br><span class="line">lss esp,_stack_start</span><br></pre></td></tr></table></figure>
+
+<p>先设置了 idt 和 gdt，然后又重新执行了一遍刚刚执行过的代码。</p>
+<p>为什么要重新设置这些段寄存器呢？ 因为上面修改了 gdt，所以要重新设置一遍以刷新才能生效。</p>
+<p>那我们接下来就把目光放到设置 idt 和 gdt 上。</p>
+<h4 id="设置中断描述符表"><a href="#设置中断描述符表" class="headerlink" title="设置中断描述符表"></a>设置中断描述符表</h4><details><summary>中断描述符表 idt 我们之前没设置过，所以这里设置具体的值，理所应当</summary>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">setup_idt:</span><br><span class="line">    lea edx,ignore_int</span><br><span class="line">    mov eax,00080000h</span><br><span class="line">    mov ax,dx</span><br><span class="line">    mov dx,8E00h</span><br><span class="line">    lea edi,_idt</span><br><span class="line">    mov ecx,256</span><br><span class="line">rp_sidt:</span><br><span class="line">    mov [edi],eax</span><br><span class="line">    mov [edi+4],edx</span><br><span class="line">    add edi,8</span><br><span class="line">    dec ecx</span><br><span class="line">    jne rp_sidt</span><br><span class="line">    lidt fword ptr idt_descr</span><br><span class="line">    ret</span><br><span class="line"></span><br><span class="line">idt_descr:</span><br><span class="line">    dw 256*8-1</span><br><span class="line">    dd _idt</span><br><span class="line"></span><br><span class="line">_idt:</span><br><span class="line">    DQ 256 dup(0)</span><br></pre></td></tr></table></figure>
+</details>
+
+<p>中断描述符表 idt 里面存储着一个个中断描述符，每一个中断号就对应着一个中断描述符，而中断描述符里面存储着主要是中断程序的地址，这样一个中断号过来后，CPU 就会自动寻找相应的中断程序，然后去执行它。</p>
+<p>那这段程序的作用就是:</p>
+<ul>
+<li><strong>设置了 256 个中断描述符</strong>，</li>
+<li>并且让每一个中断描述符中的中断程序例程都指向一个 <strong>ignore_int</strong> 的函数地址<ul>
+<li>这个是个<strong>默认的中断处理程序</strong>，之后会逐渐被各个具体的中断程序所覆盖。</li>
+<li>比如之后键盘模块会将自己的键盘中断处理程序，覆盖过去。</li>
+</ul>
+</li>
+</ul>
+<p>那现在，产生任何中断都会指向这个默认的函数 ignore_int，也就是说<strong>现在这个阶段你按键盘还不好使</strong>。</p>
+<h4 id="设置全局描述符表"><a href="#设置全局描述符表" class="headerlink" title="设置全局描述符表"></a>设置全局描述符表</h4><p>设置中断描述符表 setup_idt 说完了，那接下来 setup_gdt 就同理了。</p>
+<p>我们就直接看设置好后的新的全局描述符表长什么样吧？</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">_gdt:</span><br><span class="line">    DQ 0000000000000000h    ;/* NULL descriptor */</span><br><span class="line">    DQ 00c09a0000000fffh    ;/* 16Mb */</span><br><span class="line">    DQ 00c0920000000fffh    ;/* 16Mb */</span><br><span class="line">    DQ 0000000000000000h    ;/* TEMPORARY - don&#x27;t use */</span><br><span class="line">    DQ 252 dup(0)</span><br></pre></td></tr></table></figure>
+
+<p>其实和我们原先设置好的 gdt 一模一样。</p>
+<p>也是有<strong>代码段描述符和数据段描述符</strong>，然后第四项系统段描述符并没有用到，不用管。</p>
+<p>最后还留了 252 项的空间，这些空间后面会用来放置<strong>任务状态段描述符 TSS 和局部描述符 LDT</strong>，这个后面再说。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_37.png"></p>
+<p>为什么原来已经设置过一遍了，这里又要重新设置一遍?</p>
+<p>你可千万别想有什么复杂的原因，就是因为原来设置的 gdt 是在 setup 程序中，之后这个地方要被缓冲区覆盖掉，所以这里重新设置在 head 程序中，这块内存区域之后就不会被其他程序用到并且覆盖了，就这么个事。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_38.png"></p>
+<h4 id="总结-4"><a href="#总结-4" class="headerlink" title="总结"></a>总结</h4><p>总体而言，header.s 目前就是完成了寄存器位置的一个指向转换，并且给所有中断设置了一个默认的中断处理程序 ignore_int，然后全局描述符表仍然只有代码段描述符和数据段描述符。</p>
+<h3 id="Intel-内存管理两板斧-分段和分页"><a href="#Intel-内存管理两板斧-分段和分页" class="headerlink" title="Intel 内存管理两板斧-分段和分页"></a>Intel 内存管理两板斧-分段和分页</h3><p>header.s 代码在重新设置gdt和idt后， 来到了这样一段代码</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">jmp after_page_tables</span><br><span class="line">...</span><br><span class="line">after_page_tables:</span><br><span class="line">    push 0</span><br><span class="line">    push 0</span><br><span class="line">    push 0</span><br><span class="line">    push L6</span><br><span class="line">    push _main</span><br><span class="line">    jmp setup_paging</span><br><span class="line">L6:</span><br><span class="line">    jmp L6</span><br></pre></td></tr></table></figure>
+
+<p>那就是开启分页机制，并且跳转到 main 函数！</p>
+<p>这可太令人兴奋了！开启分页后，配合着分段，就构成了内存管理的最最底层的机制。</p>
+<p>而跳转到 main 函数，标志着我们正式进入 c 语言写的操作系统核心代码！如何跳转到之后用 c 语言写的 main.c 里的 main 函数，是个有趣的事，也包含在这段代码里。</p>
+<p>不过我们先瞧瞧这<strong>分页机制</strong>是如何开启的，也就是 setup_paging 这个标签处的代码。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">setup_paging:</span><br><span class="line">    mov ecx,1024*5</span><br><span class="line">    xor eax,eax</span><br><span class="line">    xor edi,edi</span><br><span class="line">    pushf</span><br><span class="line">    cld</span><br><span class="line">    rep stosd</span><br><span class="line">    mov eax,_pg_dir</span><br><span class="line">    mov [eax],pg0+7</span><br><span class="line">    mov [eax+4],pg1+7</span><br><span class="line">    mov [eax+8],pg2+7</span><br><span class="line">    mov [eax+12],pg3+7</span><br><span class="line">    mov edi,pg3+4092</span><br><span class="line">    mov eax,00fff007h</span><br><span class="line">    std</span><br><span class="line">L3: stosd</span><br><span class="line">    sub eax,00001000h</span><br><span class="line">    jge L3</span><br><span class="line">    popf</span><br><span class="line">    xor eax,eax</span><br><span class="line">    mov cr3,eax</span><br><span class="line">    mov eax,cr0</span><br><span class="line">    or  eax,80000000h</span><br><span class="line">    mov cr0,eax</span><br><span class="line">    ret</span><br></pre></td></tr></table></figure>
+
+<h4 id="分页机制"><a href="#分页机制" class="headerlink" title="分页机制"></a>分页机制</h4><p>首先要了解的就是，啥是分页机制？</p>
+<p>还记不记得之前我们在代码中给出一个内存地址，在保护模式下要先经过分段机制的转换，才能最终变成物理地址，就是这样。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_39.png"></p>
+<p>这是在没有开启分页机制的时候，只需要经过这一步转换即可得到最终的物理地址了，但是在开启了分页机制后，又会<strong>多一步转换</strong>。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_40.png"></p>
+<p>也就是说：</p>
+<ul>
+<li>在没有开启分页机制时，由程序员给出的逻辑地址，需要先通过分段机制转换成物理地址。</li>
+<li>但在开启分页机制后，逻辑地址仍然要先通过分段机制进行转换，只不过转换后不再是最终的物理地址，而是线性地址，然后再通过一次分页机制转换，得到最终的物理地址。</li>
+</ul>
+<p>分段机制我们已经清楚如何对地址进行变换了，那分页机制又是如何变换的呢？我们直接以一个例子来学习过程。</p>
+<p>比如我们的线性地址（已经经过了分段机制的转换）是 <code>15M</code>, 二进制表示就是 <code>0000000011_0100000000_000000000000</code></p>
+<p>我们看一下它的转换过程</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_41.png"></p>
+<p>也就是说，CPU 在看到我们给出的内存地址后，首先把线性地址被拆分成</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">高 10 位：中间 10 位：后 12 位</span><br></pre></td></tr></table></figure>
+
+<p>高 10 位负责在<strong>页目录表</strong>中找到一个<strong>页目录项</strong>，这个页目录项的值加上中间 10 位拼接后的地址去<strong>页表</strong>中去寻找一个<strong>页表项</strong>，这个页表项的值，再加上后 12 位偏移地址，就是最终的物理地址。</p>
+<p>而这一切的操作，都由计算机的一个硬件叫 <strong>MMU</strong>，中文名字叫<strong>内存管理单元</strong>，有时也叫 PMMU，分页内存管理单元。由这个部件来负责将虚拟地址转换为物理地址。</p>
+<p>所以整个过程我们不用操心，作为操作系统这个软件层，只需要提供好页目录表和页表即可，这种页表方案叫做<strong>二级页表</strong>，第一级叫<strong>页目录表 PDE</strong>，第二级叫<strong>页表 PTE</strong>。</p>
+<p>他们的结构如下:</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_42.png"></p>
+<p>之后再开启分页机制的开关。其实就是更改 cr0 寄存器中的一位即可（31 位），还记得我们开启保护模式么，也是改这个寄存器中的一位的值。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_43.png"></p>
+<p>然后，MMU 就可以帮我们进行分页的转换了。此后指令中的内存地址（就是程序员提供的逻辑地址），就统统要先经过分段机制的转换，再通过分页机制的转换，才能最终变成物理地址。</p>
+<p>所以这段代码，就是帮我们<strong>把页表和页目录表在内存中写好，之后开启 cr0 寄存器的分页开关</strong>，仅此而已，我们再把代码贴上来。</p>
+<h4 id="分页内存结构"><a href="#分页内存结构" class="headerlink" title="分页内存结构"></a>分页内存结构</h4><p>我们先说这段代码最终产生的效果吧。</p>
+<p>当时 linux-0.11 认为，总共可以使用的内存不会超过 <strong>16M</strong>，也即最大地址空间为 <strong>0xFFFFFF</strong>。</p>
+<p>而按照当前的页目录表和页表这种机制:</p>
+<ul>
+<li>1 个页目录表最多包含 1024 个页目录项（也就是 1024 个页表），</li>
+<li>1 个页表最多包含 1024 个页表项（也就是 1024 个页），</li>
+<li>1 页为 4KB（因为有 12 位偏移地址）</li>
+</ul>
+<p>因此，16M 的地址空间可以用 1 个页目录表 + 4 个页表搞定。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">4（页表数）* 1024（页表项数） * 4KB（一页大小）= 16MB</span><br></pre></td></tr></table></figure>
+
+<p>所以，上面这段代码就是，<strong>将页目录表放在内存地址的最开头</strong>，还记得上一讲开头让你留意的 _pg_dir 这个标签吧？</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">_pg_dir:</span><br><span class="line">_startup_32:</span><br><span class="line">    mov eax,0x10</span><br><span class="line">    mov ds,ax</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+
+<p><strong>之后紧挨着这个页目录表，放置 4 个页表</strong>，代码里也有这四个页表的标签项。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">.org 0x1000 pg0:</span><br><span class="line">.org 0x2000 pg1:</span><br><span class="line">.org 0x3000 pg2:</span><br><span class="line">.org 0x4000 pg3:</span><br><span class="line">.org 0x5000</span><br></pre></td></tr></table></figure>
+
+<p>最终将页目录表和页表填写好数值，来覆盖整个 16MB 的内存。随后，开启分页机制。</p>
+<p>此时内存中的页表相关的布局如下。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_44.png"></p>
+<p>这些页目录表和页表放到了整个内存布局中最开头的位置，就是覆盖了开头的 system 代码了，不过被覆盖的 system 代码已经执行过了，所以无所谓。</p>
+<p>同时，如 idt 和 gdt 一样，我们也需要通过一个寄存器告诉 CPU 我们把这些页表放在了哪里，就是这段代码。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">xor eax,eax</span><br><span class="line">mov cr3,eax</span><br></pre></td></tr></table></figure>
+
+<p>你看，我们相当于告诉 <strong>cr3 寄存器</strong>，<strong>0 地址处就是页目录表，再通过页目录表可以找到所有的页表</strong>，也就相当于 CPU 知道了分页机制的全貌了。</p>
+<p>至此后，整个内存布局如下:</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_45.png"></p>
+<h4 id="页表具体映射内存"><a href="#页表具体映射内存" class="headerlink" title="页表具体映射内存"></a>页表具体映射内存</h4><p>那么具体页表设置好后，映射的内存是怎样的情况呢？那就要看页表的具体数据了，就是这一坨代码。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">setup_paging:</span><br><span class="line">    ...</span><br><span class="line">    mov eax,_pg_dir</span><br><span class="line">    mov [eax],pg0+7</span><br><span class="line">    mov [eax+4],pg1+7</span><br><span class="line">    mov [eax+8],pg2+7</span><br><span class="line">    mov [eax+12],pg3+7</span><br><span class="line">    mov edi,pg3+4092</span><br><span class="line">    mov eax,00fff007h</span><br><span class="line">    std</span><br><span class="line">L3: stosd</span><br><span class="line">    sub eax, 1000h</span><br><span class="line">    jpe L3</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+
+<p>很简单，对照刚刚的页目录表与页表结构看。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_42.png"></p>
+<p>前五行表示，页目录表的前 4 个页目录项，分别指向 4 个页表。比如页目录项中的第一项 [eax] 被赋值为 pg0+7，也就是 0x00001007，根据页目录项的格式，表示页表地址为 0x1000，页属性为 0x07 表示改页存在、用户可读写。</p>
+<p>后面几行表示，填充 4 个页表的每一项，一共 4*1024=4096 项，依次映射到内存的前 16MB 空间。</p>
+<p>画出图就是这个样子，其实刚刚的图就是:</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_46.png"></p>
+<p>看，最终的效果就是，经过这套分页机制，<strong>线性地址将恰好和最终转换的物理地址一样</strong>。</p>
+<p>现在只有四个页目录项，也就是将前 16M 的线性地址空间，与 16M 的物理地址空间一一对应起来了。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_47.png"></p>
+<p>好了，我们终于把这些杂七杂八的idt、gdt、页表都设置好了，并且也开启了保护模式，之后我们就要做好进入 main.c 的准备了，那里是个新世界！</p>
+<h4 id="拓展-名词梳理"><a href="#拓展-名词梳理" class="headerlink" title="拓展 - 名词梳理"></a>拓展 - 名词梳理</h4><p>关于地址，我们已经出现了好多词了，包括<strong>逻辑地址</strong>、<strong>线性地址</strong>、<strong>物理地址</strong>，以及本文中没出现的，你可能在很多地方看到过的<strong>虚拟地址</strong>。</p>
+<p>而这些地址后面加上空间两个字，似乎又成为了一个新词，比如<strong>线性地址空间</strong>、<strong>物理地址空间</strong>、<strong>虚拟地址空间</strong>等。</p>
+<p>那就是时候展开一波讨论，将这块的内容梳理一番了，且听我说。</p>
+<p>Intel 体系结构的内存管理可以分成两大部分，也就是标题中的两板斧，<strong>分段和分页</strong>。</p>
+<ul>
+<li><p><strong>分段机制</strong>： 在之前已经讨论过多次了，其目的是为了为每个程序或任务提供单独的代码段（cs）、数据段（ds）、栈段（ss），使其不会相互干扰。</p>
+</li>
+<li><p><strong>分页机制</strong>： 开机后分页机制默认是关闭状态，需要我们手动开启，并且设置好页目录表（PDE）和页表（PTE）。</p>
+<ul>
+<li>其目的在于可以按需使用物理内存，同时也可以在多任务时起到隔离的作用，这个在后面将多任务时将会有所体会。</li>
+</ul>
+</li>
+</ul>
+<p>在 Intel 的保护模式下，分段机制是没有开启和关闭一说的，它必须存在，而分页机制是可以选择开启或关闭的。所以如果有人和你说，它实现了一个没有分段机制的操作系统，那一定是个外行。</p>
+<p>再说说那些地址：</p>
+<ul>
+<li><p>逻辑地址：我们程序员写代码时给出的地址叫逻辑地址，其中包含段选择子和偏移地址两部分。</p>
+</li>
+<li><p>线性地址：通过分段机制，将逻辑地址转换后的地址，叫做线性地址。而这个线性地址是有个范围的，这个范围就叫做线性地址空间，32 位模式下，线性地址空间就是 4G。</p>
+</li>
+<li><p>物理地址：就是真正在内存中的地址，它也是有范围的，叫做物理地址空间。那这个范围的大小，就取决于你的内存有多大了。</p>
+</li>
+<li><p>虚拟地址：如果没有开启分页机制，那么线性地址就和物理地址是一一对应的，可以理解为相等。如果开启了分页机制，那么线性地址将被视为虚拟地址，这个虚拟地址将会通过分页机制的转换，最终转换成物理地址。</p>
+</li>
+</ul>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_48.png"></p>
+<h3 id="进入-main-c-之前的最后一哆嗦"><a href="#进入-main-c-之前的最后一哆嗦" class="headerlink" title="进入 main.c 之前的最后一哆嗦"></a>进入 main.c 之前的最后一哆嗦</h3><p>回到上节中开启分页机制的代码</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">jmp after_page_tables</span><br><span class="line">...</span><br><span class="line">after_page_tables:</span><br><span class="line">    push 0</span><br><span class="line">    push 0</span><br><span class="line">    push 0</span><br><span class="line">    push L6</span><br><span class="line">    push _main</span><br><span class="line">    jmp setup_paging</span><br><span class="line">L6:</span><br><span class="line">    jmp L6</span><br></pre></td></tr></table></figure>
+
+<p>这里有个 push _main，把 main 函数的地址压栈了，那最终跳转到这个 main.c 里的 main 函数，一定和这个压栈有关。</p>
+<p>压栈为什么和跳转到这里还能联系上呢？</p>
+<p>五个 push 指令过去后，栈会变成这个样子。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_49.png"></p>
+<p>然后注意，setup_paging 最后一个指令是 ret，也就是设置分页的代码的最后一个指令，形象地说它叫<strong>返回指令</strong>，但 CPU 可没有那么聪明，它并不知道该返回到哪里执行，只是很<strong>机械地把栈顶的元素值当做返回地址</strong>，跳转去那里执行。</p>
+<p>再具体说是，把 esp 寄存器（栈顶地址）所指向的内存处的值，赋值给 eip 寄存器，而 cs:eip 就是 CPU 要执行的下一条指令的地址。而此时栈顶刚好是 main.c 里写的 main 函数的内存地址，是我们刚刚特意压入栈的，所以 CPU 就理所应当跳过来了。</p>
+<details><summary>当然 Intel CPU 是设计了 call 和 ret 这一配对儿的指令，意为调用函数和返回</summary>
+
+<p>关于 ret 指令，其实 Intel CPU 是配合 call 设计的，有关 call 和 ret 指令，即调用和返回指令，可以参考 Intel 手册。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Intel 1 Chapter 6.4 CALLING PROCEDURES USING CALL AND RET</span><br></pre></td></tr></table></figure>
+<p>同时，可以看到系统还分为不改变段基址的 near call &amp; near ret, 以及改变段基址的 far call 和 far ret。</p>
+<p>压栈和出栈的具体过程，上面文字写的清清楚楚，下面 Intel 手册还非常友好地放了张图。</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_52.png"></p>
+<p>可以看到，我们本文就是左边的那一套，把 main 函数地址值当做 Calling EIP 压入栈，仿佛是执行了 call 指令调用了一个函数一样，但实际上这是我们通过骚操作代码伪造的假象，骗了 CPU。</p>
+<p>然后 ret 的时候就把栈顶的那个 Calling EIP 也就是 main 函数地址弹出栈，存入 EIP 寄存器，这样 CPU 就相当于“返回”到了 main 函数开始执行。</p>
+</details>
+
+<p>至于其他压入栈的 L6 是用作当 main 函数返回时的跳转地址，但由于在操作系统层面的设计上，main 是绝对不会返回的，所以也就没用了。而其他的三个压栈的 0，本意是作为 main 函数的参数，但实际上似乎也没有用到，所以也不必关心。</p>
+<p>总之，经过这一个小小的骚操作，程序终于跳转到 main.c 这个由 c 语言写就的主函数 main 里了！</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">void main(void) &#123;</span><br><span class="line">    ROOT_DEV = ORIG_ROOT_DEV;</span><br><span class="line">    drive_info = DRIVE_INFO;</span><br><span class="line">    memory_end = (1&lt;&lt;20) + (EXT_MEM_K&lt;&lt;10);</span><br><span class="line">    memory_end &amp;= 0xfffff000;</span><br><span class="line">    if (memory_end &gt; 16*1024*1024)</span><br><span class="line">        memory_end = 16*1024*1024;</span><br><span class="line">    if (memory_end &gt; 12*1024*1024) </span><br><span class="line">        buffer_memory_end = 4*1024*1024;</span><br><span class="line">    else if (memory_end &gt; 6*1024*1024)</span><br><span class="line">        buffer_memory_end = 2*1024*1024;</span><br><span class="line">    else</span><br><span class="line">        buffer_memory_end = 1*1024*1024;</span><br><span class="line">    main_memory_start = buffer_memory_end;</span><br><span class="line">    mem_init(main_memory_start,memory_end);</span><br><span class="line">    trap_init();</span><br><span class="line">    blk_dev_init();</span><br><span class="line">    chr_dev_init();</span><br><span class="line">    tty_init();</span><br><span class="line">    time_init();</span><br><span class="line">    sched_init();</span><br><span class="line">    buffer_init(buffer_memory_end);</span><br><span class="line">    hd_init();</span><br><span class="line">    floppy_init();</span><br><span class="line">    sti();</span><br><span class="line">    move_to_user_mode();</span><br><span class="line">    if (!fork()) &#123;</span><br><span class="line">        init();</span><br><span class="line">    &#125;</span><br><span class="line">    for(;;) pause();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>没错，这就是这个 main 函数的全部了。</p>
+<p>而整个操作系统也会最终停留在最后一行死循环中，永不返回，直到关机。</p>
+<h4 id="总结-5"><a href="#总结-5" class="headerlink" title="总结"></a>总结</h4><p>至此，系统正式完成了 main 函数的所有准备工作，并跳转到了 main 函数地址。</p>
+<p>来看看系统都经历了什么？</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_50.png"></p>
+<p>而经过这样的流程，内存被搞成了这个样子</p>
+<p><img src="/2022/04/19/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B9%8B%E8%BF%9B%E5%85%A5%E5%86%85%E6%A0%B8%E5%89%8D%E7%9A%84%E8%8B%A6%E5%8A%9B%E6%B4%BB/img_51.png"></p>
+<p>之后，main 方法就开始执行了，靠着我们辛辛苦苦建立起来的内存布局，向崭新的未来前进！</p>
+</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">操作系统</a></div><nav id="pagination"><div class="next-post pull-right"><a href="/2022/04/18/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%AC%AC%E4%B8%80%E6%AD%A5%E4%B9%8B%E6%8C%89%E4%B8%8B%E5%BC%80%E6%9C%BA%E9%94%AE/"><span>操作系统第一步之按下开机键</span><i class="fa fa-chevron-right"></i></a></div></nav><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '83850031ee87c27765eb',
+  clientSecret: '6c5e13a8b6670d5bfa85ba548ba3570cae29e671',
+  repo: 'blob-comment',
+  owner: 'hepeng0',
+  admin: 'hepeng0',
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN'
+})
+gitalk.render('gitalk-container')</script></div></div><footer><div class="layout" id="footer"><div class="copyright">&copy;2018 - 2022 By 何鹏 [smile.hepeng@qq.com]</div><div class="footer_custom_text">hitokoto</div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.9.0"></script><script src="/js/fancybox.js?version=1.9.0"></script><script src="/js/sidebar.js?version=1.9.0"></script><script src="/js/copy.js?version=1.9.0"></script><script src="/js/fireworks.js?version=1.9.0"></script><script src="/js/transition.js?version=1.9.0"></script><script src="/js/scroll.js?version=1.9.0"></script><script src="/js/head.js?version=1.9.0"></script><script src="/js/search/local-search.js"></script><script>if(/Android|webOS|iPhone|iPod|iPad|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+  $('#top-container').addClass('is-mobile')
+}</script><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">本地搜索</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章"></div></div></div><hr><div id="local-search-results"><div id="local-hits"></div><div id="local-stats"></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div></body></html>
