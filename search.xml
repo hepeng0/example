@@ -4,6 +4,33 @@
   
     
     <entry>
+      <title>高并发系统总结之如何设计一个高吞吐的系统概述</title>
+      <link href="/2022/07/19/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F%E6%80%BB%E7%BB%93%E4%B9%8B%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E4%B8%80%E4%B8%AA%E9%AB%98%E5%90%9E%E5%90%90%E7%9A%84%E7%B3%BB%E7%BB%9F%E6%A6%82%E8%BF%B0/"/>
+      <url>/2022/07/19/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F%E6%80%BB%E7%BB%93%E4%B9%8B%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E4%B8%80%E4%B8%AA%E9%AB%98%E5%90%9E%E5%90%90%E7%9A%84%E7%B3%BB%E7%BB%9F%E6%A6%82%E8%BF%B0/</url>
+      
+        <content type="html"><![CDATA[<ul><li>请求消息放入缓冲，批量处理，减少后续网络请求</li><li>减少使用synchronized，大量使用Atomic，volatile，cas等基于乐观思想实现的锁机制</li><li>大量采用线程池技术，支持多线程并发处理，提升处理能力，同时减少线程创建销毁性能消耗</li><li>压缩存储数据格式，少用基于java对象序列化，基于二进制保存</li><li>数据存放大都采用顺序写，提升磁盘读写性能</li><li>压缩时间复杂度，设计优秀方案、算法、数据结构，用少量空间换时间</li><li>多级缓存机制，读写各一层缓存，减少并发冲突</li><li>采用DMA，减少用户态和内核态频繁切换，减少性能消耗</li><li>采用os cache，减少磁盘IO操作，理论牺牲小部分数据丢失，增加处理能力</li><li>采用NIO，多路复用机制实现少量线程支持大量客户端连接及请求</li><li>大量使用并发安全集合，队列，列表，解决复杂数据结构并发安全，减少使用synchronized关键字，提升并发性能</li><li>采用ByteBuffer Pool，使用堆外内存，复用内存空间，减少内存开辟和销毁性能消耗</li><li>使用synchronized时，采用分段加锁机制，减少并发冲突时间等待</li><li>懒加载机制，当使用到时，采取请求数据，并且缓存。</li><li>耗时逻辑，利用数据结构和算法将耗时操作分散在各个逻辑中，比如redis中字典的扩容操作</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> JAVA开发 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 高并发 </tag>
+            
+            <tag> 设计理论 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>操作系统第三步之一个新进程的诞生</title>
       <link href="/2022/06/14/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%AC%AC%E4%B8%89%E6%AD%A5%E4%B9%8B%E4%B8%80%E4%B8%AA%E6%96%B0%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%AF%9E%E7%94%9F/"/>
       <url>/2022/06/14/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%AC%AC%E4%B8%89%E6%AD%A5%E4%B9%8B%E4%B8%80%E4%B8%AA%E6%96%B0%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%AF%9E%E7%94%9F/</url>
@@ -340,9 +367,9 @@
             
             <tag> 分布式 </tag>
             
-            <tag> 设计理念 </tag>
-            
             <tag> 主从同步 </tag>
+            
+            <tag> 设计理念 </tag>
             
         </tags>
       
@@ -556,11 +583,11 @@
     
     
     <entry>
-      <title>JAVA并发编程之线程安全及解决方案大纲</title>
-      <link href="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E5%A4%A7%E7%BA%B2/"/>
-      <url>/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E5%A4%A7%E7%BA%B2/</url>
+      <title>JAVA并发编程之这个&quot;破玩意儿&quot;叫锁</title>
+      <link href="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/"/>
+      <url>/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/</url>
       
-        <content type="html"><![CDATA[<h2 id="为什么需要多线程"><a href="#为什么需要多线程" class="headerlink" title="为什么需要多线程"></a>为什么需要多线程</h2><p>线程是Java语言中不可或缺的重要部分，它们能使复杂的异步代码变得简单，简化复杂系统的开发；能充分发挥多处理器系统的强大计算能力。</p><h3 id="多线程优点"><a href="#多线程优点" class="headerlink" title="多线程优点"></a>多线程优点</h3><ol><li><p><strong>充分利用硬件资源</strong>。由于线程是cpu的基本调度单位，所以如果是单线程，那么最多只能同时在一个处理器上运行，意味着其他的CPU资源都将被浪费。而多线程可以同时在多个处理器上运行，只要各个线程间的通信设计正确，那么多线程将能充分利用处理器的资源。</p></li><li><p><strong>结构优雅</strong>。多线程程序能将代码量巨大，复杂的程序分成一个个简单的功能模块，每块实现复杂程序的一部分单一功能，这将会使得程序的建模，测试更加方便，结构更加清晰，更加优雅。</p></li><li><p><strong>简化异步处理</strong>。为了避免阻塞，单线程应用程序必须使用非阻塞I/O,这样的I/O复杂性远远高于同步I/O，并且容易出错。</p></li></ol><h3 id="多线程缺点"><a href="#多线程缺点" class="headerlink" title="多线程缺点"></a>多线程缺点</h3><ol><li><p><strong>线程安全</strong>：由于统一进程下的多个线程是共享同样的地址空间和数据的，又由于线程执行顺序的不可预知性，一个线程可能会修改其他线程正在使用的变量，这一方面是给数据共享带来了便利；另一方面，如果处理不当，会产生脏读，幻读等问题，好在Java提供了一系列的同步机制来帮助解决这一问题，例如内置锁。</p></li><li><p><strong>活跃性问题</strong>。可能会发生长时间的等待锁，甚至是死锁。</p></li><li><p><strong>性能问题</strong>。 线程的频繁调度切换会浪费资源，同步机制会导致内存缓冲区的数据无效，以及增加同步流量。</p></li></ol><h2 id="线程安全"><a href="#线程安全" class="headerlink" title="线程安全"></a>线程安全</h2><h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><p>当多个线程访问某个类时，不管运行时环境采用何种调度方式或者这些线程将如何交替运行，并且在主调试代码中不需要任何额外的同步或者协同，这个类都能表现出正确的行为，则称这个类时线程安全的。</p><p>线程安全类中封装了必要的同步机制，因此客户端无须进一步采取同步措施。</p><h3 id="线程安全问题产生的原因"><a href="#线程安全问题产生的原因" class="headerlink" title="线程安全问题产生的原因"></a>线程安全问题产生的原因</h3><p>正确性取决于多个线程的交替执行时序，产生了竞态条件。</p><h3 id="原子类"><a href="#原子类" class="headerlink" title="原子类"></a>原子类</h3><p>应尽量使用原子类，这样会让你分析线程安全时更加方便，但需要注意的是用线程安全类构建的类并不能保证线程安全。</p><p>例如，一个AtomicInteger get() 和 AtomicInteger set() 是线程安全的，在一个类的一个方法 f()中同时用到了这两个方法，此时的f()就是线程不安全的，因为你不能保证这个复合操作中的get 和 set同时更新。</p><h2 id="线程安全的解决方案"><a href="#线程安全的解决方案" class="headerlink" title="线程安全的解决方案"></a>线程安全的解决方案</h2><h3 id="加锁"><a href="#加锁" class="headerlink" title="加锁"></a>加锁</h3><ol><li><p>锁能使其保护的代码以串行的形式来访问，当给一个复合操作加锁后，能使其成为原子操作。一种错误的思想是只要对写数据的方法加锁，其实这是错的，对数据进行操作的所有方法都需加锁，不管是读还是写。</p></li><li><p>加锁时需要考虑性能问题，不能总是一味地给整个方法加锁synchronized就了事了，应该将方法中不影响共享状态且执行时间比较长的代码分离出去。</p></li><li><p>加锁的含义不仅仅局限于互斥，还包括可见性。为了确保所有线程都能看见最新值，读操作和写操作必须使用同样的锁对象。</p></li></ol><h3 id="不共享状态"><a href="#不共享状态" class="headerlink" title="不共享状态"></a>不共享状态</h3><ol><li><p>无状态对象： 无状态对象一定是线程安全的，因为不会影响到其他线程。</p></li><li><p>线程关闭： 仅在单线程环境下使用。</p></li></ol><h3 id="不可变对象"><a href="#不可变对象" class="headerlink" title="不可变对象"></a>不可变对象</h3><p>可以使用final修饰的对象保证线程安全，由于final修饰的引用型变量(除String外)不可变是指引用不可变，但其指向的对象是可变的，所以此类必须安全发布，也即不能对外提供可以修改final对象的接口。</p>]]></content>
+        <content type="html"><![CDATA[<p>说明： 转载自<a href="https://mp.weixin.qq.com/s/PL-oTc5J_pe5Oyb8mdltjQ">中间件兴趣圈-你管这“破玩意儿”叫锁</a></p><h2 id="锁的种类"><a href="#锁的种类" class="headerlink" title="锁的种类"></a>锁的种类</h2><p>首先以一个非常常见的生活场景举例，例如一个三口之家居住在一个二房一厅的房子里，只有一个卫生间，早上一起床，大家都有抢卫生间，这里就会发生： 一人在如厕，其他人排队等待的场景。</p><p>这个场景下有如下几个关键的特征：</p><ul><li>独占 “厕所“作为一个资源，在任意时刻只能被一个人占用，为了实现该效果，使用资源之前，需要先获得与该资源关联的锁</li><li>当多个线程都需要访问该资源时，必须先获得锁，而且在同一时刻有且只会有一个线程获得锁，那没有获得锁的线程就需要排队等待。是一直等，还是等得不耐烦时就放弃？</li><li>当有多人排队时，一个线程将锁释放后，交给谁？什么样的策略？</li></ul><p>上面是最常见的锁应用场景，有一个非常响亮的名称：<strong>互斥锁、排它锁</strong>。</p><h3 id="互斥锁"><a href="#互斥锁" class="headerlink" title="互斥锁"></a>互斥锁</h3><p>在java领域中，实现互斥锁通常有两种方式：</p><ul><li>synchronized</li><li>ReentrantLock</li></ul><p>互斥锁的基本语义：</p><table><thead><tr><th>语义</th><th>说明</th><th>ReentrantLock</th><th>synchronized</th></tr></thead><tbody><tr><td>可重入性</td><td>一个线程获取锁后，没有释放之前，继续申请</td><td>支持</td><td>支持</td></tr><tr><td>锁只能被锁的拥有者释放</td><td><strong>基于redis实现分布式锁时，要特别注意这个特质</strong></td><td>——</td><td>——</td></tr><tr><td>中断</td><td>申请锁时是否支持被中断</td><td>调用lockInterruptibly方法，可以支持线程中断，即停止继续申请锁</td><td>不支持</td></tr><tr><td>公平锁或非公平锁</td><td>当拥有锁的线程释放锁后，锁的下一个获取者就是锁等待队列中的第一个元素</td><td>支持</td><td>不支持</td></tr></tbody></table><h3 id="共享锁"><a href="#共享锁" class="headerlink" title="共享锁"></a>共享锁</h3><p>与互斥锁相对应的是共享锁，所谓的共享锁是<strong>同一时间可以被多个线程共同申请</strong>，一个非常经典的使用场景就是<strong>读写锁</strong>。</p><p>例如在一个缓存场景，在一个商品系统中，为了提供对商品的访问性能，通常会引入一个缓存区(Map)来缓存商品的数据，缓存数据对查询请求(读请求)是可以并行执行的，即多个线程同时查询缓存区的数据，这个是一个非常安全的操作，但不允许多个线程对缓存区进行修改。这里共享锁的意义就发挥出来了。</p><p>既然多个线程对缓存区可以同时进行读操作，那为什么还要加共享锁呢？主要的目的是<strong>避免写操作与读操作同时进行</strong>。</p><p>只要当前有读操作在进行，写操作就需要排队，请看如下示例图：<br><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img.png"><br>如上图所示：例如 线程T1,T2,T3连续申请共享锁，然后T4申请写锁，再T5申请读锁，那各个线程的并发执行情况如下所示：</p><ul><li>线程 T1、T2、T3 将并发执行</li><li>T4由于是申请的写锁，必须等 T1、T2、T3释放锁后，才能执行。</li><li>T5虽然申请是共享锁，但由于T4持有写锁，故T5也需要阻塞，直至T4释放锁。</li></ul><p>在Java等世界中按<strong>锁的排斥性</strong>来分基本就包含<strong>排它锁与共享锁</strong>，其他读写锁、间隙锁等是以锁的粒度这个纬度进行细分。</p><h2 id="锁的实现原理"><a href="#锁的实现原理" class="headerlink" title="锁的实现原理"></a>锁的实现原理</h2><p>从某种意义上来说，锁的实现原理就是两个队列：<strong>同步阻塞队列、条件等待队列</strong>。</p><h3 id="同步阻塞队列"><a href="#同步阻塞队列" class="headerlink" title="同步阻塞队列"></a>同步阻塞队列</h3><p>阻塞队列的作用说明如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_1.png"></p><p>上面使用synchronized，其传入的是一个锁对象，如果此时有5个线程同时去执行这段代码，由于锁的互斥性，同一时间只有一个线程能获得锁，<strong>其他线程需要排队等待</strong>，故需要引入一个队列来存储在这些排队的线程，所以<strong>synchronized的实现机制中，会在锁对象中开辟一个队列，用来存储等待获取当前锁的线程</strong>。</p><h3 id="条件等待队列"><a href="#条件等待队列" class="headerlink" title="条件等待队列"></a>条件等待队列</h3><p>Object对象中有一对特殊的方法：wait()/notify()/notifyAll()，消费者/生产者中示例中，使用过wait,notify方法，示例代码如下：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_2.png"></p><p>wait方法必须在synchronized中调用，并且通常是<strong>线程调用锁对象的wait方法</strong>，表示当前继续往下执行的条件不足，当前线程需要等待，故需要为锁对象再维护一个个队列，用来存储等待的线程，俗称条件等待队列。</p><p>当其他线程调用锁对象的notify方法或notifyAll方法，会唤醒等待队列中的线程。</p><pre><code>温馨提示： Object.wait方法，会使当前线程进入等待状态，并且释放锁。通常条件等待会使用while语句，避免条件不满足时被误唤醒，故使用while对条件进行再一次的判断。当被唤醒后，并不立即去执行while条件判断，而是需要重新去申请锁，即可能会进入到阻塞队列。</code></pre><h2 id="锁的优化思路"><a href="#锁的优化思路" class="headerlink" title="锁的优化思路"></a>锁的优化思路</h2><p>大家都对锁很敏感，因为性能低下，但锁肯定有其存在的原因，主要解决<strong>数据访问的安全性</strong></p><p>大家可能会感到惊讶，作为一款高性能的消息中间件(RocketMQ)，在消息写入时也使用了锁，其代码如下:</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_3.png"></p><p>这是因为RocketMQ是顺序写文件，多个请求同时申请写一个文件，必须排队执行，否则会带来逻辑异常，此时锁是不用不行了。</p><p>对锁的优化策略，通常基于如下原则：</p><ul><li>能不用锁就不使用锁，</li><li>必须使用锁则尽量保证被锁包裹代码的快速执行</li><li>降低锁的粒度。</li></ul><h3 id="优化锁执行时间"><a href="#优化锁执行时间" class="headerlink" title="优化锁执行时间"></a>优化锁执行时间</h3><p>当然能不用锁就不用锁，但有些场景是必须使用锁来保证多线程环境下结果的正确性。</p><p>就以RocketMQ顺序写commitlog文件为例，对同一个文件写入，需要记录当前的写入位置，然后另外一个线程就进行追加，故这个为写入位置是多线程不安全的，故必须引入锁。</p><p>那RocketMQ作为一款高性能的消息中间件，是如何做到消息发送的高并发，低延迟能力低呢？</p><p>核心法宝：<strong>控制锁的范围，确保被锁包含的代码执行性能高效</strong>，接下来我们看一下RocketMQ消息写入的几个重要步骤：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_4.png"></p><p>并不是需要将上述三个步骤都加锁，而是只对写内存这段加锁即可，这段代码非常高效。</p><h3 id="优化锁的粒度"><a href="#优化锁的粒度" class="headerlink" title="优化锁的粒度"></a>优化锁的粒度</h3><p>锁的性能优化是一个永恒的主旨，另外一个核心思路是：<strong>降低锁的粒度，提高并发度</strong>。</p><p>接下来我们以JDK中的HashTable与ConcurrentHashMap的实现原理为例，让大家体会一下如何降低锁的粒度从而提高并发度。</p><p>Hashtable的性能低下是众所周知，因为整个容器就一把锁，因为它的get、put都是被synchronized修饰，synchronized用来修饰非static方法，其锁对象为Hashtable是对象锁。</p><ul><li>并发度：同一时间只有一个线程能向该容器添加数据、获取数据。</li></ul><p>而jkd1.7及其版本，ConcurrentHashMap的内部数据结构如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_5.png"></p><p>可以看出ConcurrentHashMap的设计思路是将整个HashMap分割成多个小的HashMap，然后为每一个HashMap加锁，从而降低锁的粒度，从而提高并发度。</p><p>在JDK1.8及版本后，ConcurrentHashMap的存储结构又发了很大改变，摒弃分段思想，使用来数组 + Node ，进一步释放读写的并发度，其数据结构如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_6.png"></p><p>其中，对每一个链表的Node节点，写操作时会加锁，但在查询时候，并不会对各个Node加锁，提高读操作的并发度；并且会基于CAS机制实现无锁化处理，使用volatile保证可见性。</p><h3 id="无锁化设计"><a href="#无锁化设计" class="headerlink" title="无锁化设计"></a>无锁化设计</h3><p>锁的存在必然有其使用场景，特别是需要<strong>被锁保护的资源众多</strong>，即临界区中的逻辑复杂，对其进行拆分会使代码变的臃肿，直接使用锁保护会清晰明了，但评估是否需要引入锁时需要慎重，特别是一些对吞吐量有极高要求的场景，能不用锁就不要用锁.</p><p><strong>无锁化设计的基础：CAS，比较和交换。</strong></p><p>在Java领域也提供了对应的原子操作工具：CAS</p><p>CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。</p><ul><li>如果内存位置的值与预期原值相匹配，那么处理器会自动将该位置值更新为新值 。</li><li>否则，处理器不做任何操作。</li><li>*CAS是CPU指令级命令**。</li></ul><p>CAS简单使用示例如下：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_7.png"></p>]]></content>
       
       
       <categories>
@@ -583,11 +610,11 @@
     
     
     <entry>
-      <title>JAVA并发编程之这个&quot;破玩意儿&quot;叫锁</title>
-      <link href="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/"/>
-      <url>/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/</url>
+      <title>JAVA并发编程之线程安全及解决方案大纲</title>
+      <link href="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E5%A4%A7%E7%BA%B2/"/>
+      <url>/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E5%A4%A7%E7%BA%B2/</url>
       
-        <content type="html"><![CDATA[<p>说明： 转载自<a href="https://mp.weixin.qq.com/s/PL-oTc5J_pe5Oyb8mdltjQ">中间件兴趣圈-你管这“破玩意儿”叫锁</a></p><h2 id="锁的种类"><a href="#锁的种类" class="headerlink" title="锁的种类"></a>锁的种类</h2><p>首先以一个非常常见的生活场景举例，例如一个三口之家居住在一个二房一厅的房子里，只有一个卫生间，早上一起床，大家都有抢卫生间，这里就会发生： 一人在如厕，其他人排队等待的场景。</p><p>这个场景下有如下几个关键的特征：</p><ul><li>独占 “厕所“作为一个资源，在任意时刻只能被一个人占用，为了实现该效果，使用资源之前，需要先获得与该资源关联的锁</li><li>当多个线程都需要访问该资源时，必须先获得锁，而且在同一时刻有且只会有一个线程获得锁，那没有获得锁的线程就需要排队等待。是一直等，还是等得不耐烦时就放弃？</li><li>当有多人排队时，一个线程将锁释放后，交给谁？什么样的策略？</li></ul><p>上面是最常见的锁应用场景，有一个非常响亮的名称：<strong>互斥锁、排它锁</strong>。</p><h3 id="互斥锁"><a href="#互斥锁" class="headerlink" title="互斥锁"></a>互斥锁</h3><p>在java领域中，实现互斥锁通常有两种方式：</p><ul><li>synchronized</li><li>ReentrantLock</li></ul><p>互斥锁的基本语义：</p><table><thead><tr><th>语义</th><th>说明</th><th>ReentrantLock</th><th>synchronized</th></tr></thead><tbody><tr><td>可重入性</td><td>一个线程获取锁后，没有释放之前，继续申请</td><td>支持</td><td>支持</td></tr><tr><td>锁只能被锁的拥有者释放</td><td><strong>基于redis实现分布式锁时，要特别注意这个特质</strong></td><td>——</td><td>——</td></tr><tr><td>中断</td><td>申请锁时是否支持被中断</td><td>调用lockInterruptibly方法，可以支持线程中断，即停止继续申请锁</td><td>不支持</td></tr><tr><td>公平锁或非公平锁</td><td>当拥有锁的线程释放锁后，锁的下一个获取者就是锁等待队列中的第一个元素</td><td>支持</td><td>不支持</td></tr></tbody></table><h3 id="共享锁"><a href="#共享锁" class="headerlink" title="共享锁"></a>共享锁</h3><p>与互斥锁相对应的是共享锁，所谓的共享锁是<strong>同一时间可以被多个线程共同申请</strong>，一个非常经典的使用场景就是<strong>读写锁</strong>。</p><p>例如在一个缓存场景，在一个商品系统中，为了提供对商品的访问性能，通常会引入一个缓存区(Map)来缓存商品的数据，缓存数据对查询请求(读请求)是可以并行执行的，即多个线程同时查询缓存区的数据，这个是一个非常安全的操作，但不允许多个线程对缓存区进行修改。这里共享锁的意义就发挥出来了。</p><p>既然多个线程对缓存区可以同时进行读操作，那为什么还要加共享锁呢？主要的目的是<strong>避免写操作与读操作同时进行</strong>。</p><p>只要当前有读操作在进行，写操作就需要排队，请看如下示例图：<br><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img.png"><br>如上图所示：例如 线程T1,T2,T3连续申请共享锁，然后T4申请写锁，再T5申请读锁，那各个线程的并发执行情况如下所示：</p><ul><li>线程 T1、T2、T3 将并发执行</li><li>T4由于是申请的写锁，必须等 T1、T2、T3释放锁后，才能执行。</li><li>T5虽然申请是共享锁，但由于T4持有写锁，故T5也需要阻塞，直至T4释放锁。</li></ul><p>在Java等世界中按<strong>锁的排斥性</strong>来分基本就包含<strong>排它锁与共享锁</strong>，其他读写锁、间隙锁等是以锁的粒度这个纬度进行细分。</p><h2 id="锁的实现原理"><a href="#锁的实现原理" class="headerlink" title="锁的实现原理"></a>锁的实现原理</h2><p>从某种意义上来说，锁的实现原理就是两个队列：<strong>同步阻塞队列、条件等待队列</strong>。</p><h3 id="同步阻塞队列"><a href="#同步阻塞队列" class="headerlink" title="同步阻塞队列"></a>同步阻塞队列</h3><p>阻塞队列的作用说明如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_1.png"></p><p>上面使用synchronized，其传入的是一个锁对象，如果此时有5个线程同时去执行这段代码，由于锁的互斥性，同一时间只有一个线程能获得锁，<strong>其他线程需要排队等待</strong>，故需要引入一个队列来存储在这些排队的线程，所以<strong>synchronized的实现机制中，会在锁对象中开辟一个队列，用来存储等待获取当前锁的线程</strong>。</p><h3 id="条件等待队列"><a href="#条件等待队列" class="headerlink" title="条件等待队列"></a>条件等待队列</h3><p>Object对象中有一对特殊的方法：wait()/notify()/notifyAll()，消费者/生产者中示例中，使用过wait,notify方法，示例代码如下：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_2.png"></p><p>wait方法必须在synchronized中调用，并且通常是<strong>线程调用锁对象的wait方法</strong>，表示当前继续往下执行的条件不足，当前线程需要等待，故需要为锁对象再维护一个个队列，用来存储等待的线程，俗称条件等待队列。</p><p>当其他线程调用锁对象的notify方法或notifyAll方法，会唤醒等待队列中的线程。</p><pre><code>温馨提示： Object.wait方法，会使当前线程进入等待状态，并且释放锁。通常条件等待会使用while语句，避免条件不满足时被误唤醒，故使用while对条件进行再一次的判断。当被唤醒后，并不立即去执行while条件判断，而是需要重新去申请锁，即可能会进入到阻塞队列。</code></pre><h2 id="锁的优化思路"><a href="#锁的优化思路" class="headerlink" title="锁的优化思路"></a>锁的优化思路</h2><p>大家都对锁很敏感，因为性能低下，但锁肯定有其存在的原因，主要解决<strong>数据访问的安全性</strong></p><p>大家可能会感到惊讶，作为一款高性能的消息中间件(RocketMQ)，在消息写入时也使用了锁，其代码如下:</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_3.png"></p><p>这是因为RocketMQ是顺序写文件，多个请求同时申请写一个文件，必须排队执行，否则会带来逻辑异常，此时锁是不用不行了。</p><p>对锁的优化策略，通常基于如下原则：</p><ul><li>能不用锁就不使用锁，</li><li>必须使用锁则尽量保证被锁包裹代码的快速执行</li><li>降低锁的粒度。</li></ul><h3 id="优化锁执行时间"><a href="#优化锁执行时间" class="headerlink" title="优化锁执行时间"></a>优化锁执行时间</h3><p>当然能不用锁就不用锁，但有些场景是必须使用锁来保证多线程环境下结果的正确性。</p><p>就以RocketMQ顺序写commitlog文件为例，对同一个文件写入，需要记录当前的写入位置，然后另外一个线程就进行追加，故这个为写入位置是多线程不安全的，故必须引入锁。</p><p>那RocketMQ作为一款高性能的消息中间件，是如何做到消息发送的高并发，低延迟能力低呢？</p><p>核心法宝：<strong>控制锁的范围，确保被锁包含的代码执行性能高效</strong>，接下来我们看一下RocketMQ消息写入的几个重要步骤：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_4.png"></p><p>并不是需要将上述三个步骤都加锁，而是只对写内存这段加锁即可，这段代码非常高效。</p><h3 id="优化锁的粒度"><a href="#优化锁的粒度" class="headerlink" title="优化锁的粒度"></a>优化锁的粒度</h3><p>锁的性能优化是一个永恒的主旨，另外一个核心思路是：<strong>降低锁的粒度，提高并发度</strong>。</p><p>接下来我们以JDK中的HashTable与ConcurrentHashMap的实现原理为例，让大家体会一下如何降低锁的粒度从而提高并发度。</p><p>Hashtable的性能低下是众所周知，因为整个容器就一把锁，因为它的get、put都是被synchronized修饰，synchronized用来修饰非static方法，其锁对象为Hashtable是对象锁。</p><ul><li>并发度：同一时间只有一个线程能向该容器添加数据、获取数据。</li></ul><p>而jkd1.7及其版本，ConcurrentHashMap的内部数据结构如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_5.png"></p><p>可以看出ConcurrentHashMap的设计思路是将整个HashMap分割成多个小的HashMap，然后为每一个HashMap加锁，从而降低锁的粒度，从而提高并发度。</p><p>在JDK1.8及版本后，ConcurrentHashMap的存储结构又发了很大改变，摒弃分段思想，使用来数组 + Node ，进一步释放读写的并发度，其数据结构如下图所示：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_6.png"></p><p>其中，对每一个链表的Node节点，写操作时会加锁，但在查询时候，并不会对各个Node加锁，提高读操作的并发度；并且会基于CAS机制实现无锁化处理，使用volatile保证可见性。</p><h3 id="无锁化设计"><a href="#无锁化设计" class="headerlink" title="无锁化设计"></a>无锁化设计</h3><p>锁的存在必然有其使用场景，特别是需要<strong>被锁保护的资源众多</strong>，即临界区中的逻辑复杂，对其进行拆分会使代码变的臃肿，直接使用锁保护会清晰明了，但评估是否需要引入锁时需要慎重，特别是一些对吞吐量有极高要求的场景，能不用锁就不要用锁.</p><p><strong>无锁化设计的基础：CAS，比较和交换。</strong></p><p>在Java领域也提供了对应的原子操作工具：CAS</p><p>CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。</p><ul><li>如果内存位置的值与预期原值相匹配，那么处理器会自动将该位置值更新为新值 。</li><li>否则，处理器不做任何操作。</li><li>*CAS是CPU指令级命令**。</li></ul><p>CAS简单使用示例如下：</p><p><img src="/2022/02/18/JAVA%E5%9F%BA%E7%A1%80/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E4%B9%8B%E8%BF%99%E4%B8%AA%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%84%BF%E5%8F%AB%E9%94%81/img_7.png"></p>]]></content>
+        <content type="html"><![CDATA[<h2 id="为什么需要多线程"><a href="#为什么需要多线程" class="headerlink" title="为什么需要多线程"></a>为什么需要多线程</h2><p>线程是Java语言中不可或缺的重要部分，它们能使复杂的异步代码变得简单，简化复杂系统的开发；能充分发挥多处理器系统的强大计算能力。</p><h3 id="多线程优点"><a href="#多线程优点" class="headerlink" title="多线程优点"></a>多线程优点</h3><ol><li><p><strong>充分利用硬件资源</strong>。由于线程是cpu的基本调度单位，所以如果是单线程，那么最多只能同时在一个处理器上运行，意味着其他的CPU资源都将被浪费。而多线程可以同时在多个处理器上运行，只要各个线程间的通信设计正确，那么多线程将能充分利用处理器的资源。</p></li><li><p><strong>结构优雅</strong>。多线程程序能将代码量巨大，复杂的程序分成一个个简单的功能模块，每块实现复杂程序的一部分单一功能，这将会使得程序的建模，测试更加方便，结构更加清晰，更加优雅。</p></li><li><p><strong>简化异步处理</strong>。为了避免阻塞，单线程应用程序必须使用非阻塞I/O,这样的I/O复杂性远远高于同步I/O，并且容易出错。</p></li></ol><h3 id="多线程缺点"><a href="#多线程缺点" class="headerlink" title="多线程缺点"></a>多线程缺点</h3><ol><li><p><strong>线程安全</strong>：由于统一进程下的多个线程是共享同样的地址空间和数据的，又由于线程执行顺序的不可预知性，一个线程可能会修改其他线程正在使用的变量，这一方面是给数据共享带来了便利；另一方面，如果处理不当，会产生脏读，幻读等问题，好在Java提供了一系列的同步机制来帮助解决这一问题，例如内置锁。</p></li><li><p><strong>活跃性问题</strong>。可能会发生长时间的等待锁，甚至是死锁。</p></li><li><p><strong>性能问题</strong>。 线程的频繁调度切换会浪费资源，同步机制会导致内存缓冲区的数据无效，以及增加同步流量。</p></li></ol><h2 id="线程安全"><a href="#线程安全" class="headerlink" title="线程安全"></a>线程安全</h2><h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><p>当多个线程访问某个类时，不管运行时环境采用何种调度方式或者这些线程将如何交替运行，并且在主调试代码中不需要任何额外的同步或者协同，这个类都能表现出正确的行为，则称这个类时线程安全的。</p><p>线程安全类中封装了必要的同步机制，因此客户端无须进一步采取同步措施。</p><h3 id="线程安全问题产生的原因"><a href="#线程安全问题产生的原因" class="headerlink" title="线程安全问题产生的原因"></a>线程安全问题产生的原因</h3><p>正确性取决于多个线程的交替执行时序，产生了竞态条件。</p><h3 id="原子类"><a href="#原子类" class="headerlink" title="原子类"></a>原子类</h3><p>应尽量使用原子类，这样会让你分析线程安全时更加方便，但需要注意的是用线程安全类构建的类并不能保证线程安全。</p><p>例如，一个AtomicInteger get() 和 AtomicInteger set() 是线程安全的，在一个类的一个方法 f()中同时用到了这两个方法，此时的f()就是线程不安全的，因为你不能保证这个复合操作中的get 和 set同时更新。</p><h2 id="线程安全的解决方案"><a href="#线程安全的解决方案" class="headerlink" title="线程安全的解决方案"></a>线程安全的解决方案</h2><h3 id="加锁"><a href="#加锁" class="headerlink" title="加锁"></a>加锁</h3><ol><li><p>锁能使其保护的代码以串行的形式来访问，当给一个复合操作加锁后，能使其成为原子操作。一种错误的思想是只要对写数据的方法加锁，其实这是错的，对数据进行操作的所有方法都需加锁，不管是读还是写。</p></li><li><p>加锁时需要考虑性能问题，不能总是一味地给整个方法加锁synchronized就了事了，应该将方法中不影响共享状态且执行时间比较长的代码分离出去。</p></li><li><p>加锁的含义不仅仅局限于互斥，还包括可见性。为了确保所有线程都能看见最新值，读操作和写操作必须使用同样的锁对象。</p></li></ol><h3 id="不共享状态"><a href="#不共享状态" class="headerlink" title="不共享状态"></a>不共享状态</h3><ol><li><p>无状态对象： 无状态对象一定是线程安全的，因为不会影响到其他线程。</p></li><li><p>线程关闭： 仅在单线程环境下使用。</p></li></ol><h3 id="不可变对象"><a href="#不可变对象" class="headerlink" title="不可变对象"></a>不可变对象</h3><p>可以使用final修饰的对象保证线程安全，由于final修饰的引用型变量(除String外)不可变是指引用不可变，但其指向的对象是可变的，所以此类必须安全发布，也即不能对外提供可以修改final对象的接口。</p>]]></content>
       
       
       <categories>
@@ -1015,9 +1042,9 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
             <tag> ZOOKEEPER </tag>
             
@@ -1044,11 +1071,11 @@
       
         <tags>
             
+            <tag> MQ </tag>
+            
             <tag> Kafka </tag>
             
             <tag> RabbitMQ </tag>
-            
-            <tag> MQ </tag>
             
         </tags>
       
@@ -1156,9 +1183,9 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
         </tags>
       
@@ -1183,9 +1210,9 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
         </tags>
       
@@ -1210,9 +1237,9 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
         </tags>
       
@@ -1237,9 +1264,9 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
         </tags>
       
@@ -1264,9 +1291,9 @@
       
         <tags>
             
-            <tag> Kafka </tag>
-            
             <tag> MQ </tag>
+            
+            <tag> Kafka </tag>
             
         </tags>
       

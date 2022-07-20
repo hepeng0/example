@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2022-06-14T03:16:51.397Z</updated>
+  <updated>2022-07-20T03:20:39.699Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -15,6 +15,35 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>高并发系统总结之如何设计一个高吞吐的系统概述</title>
+    <link href="http://example.com/2022/07/19/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F%E6%80%BB%E7%BB%93%E4%B9%8B%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E4%B8%80%E4%B8%AA%E9%AB%98%E5%90%9E%E5%90%90%E7%9A%84%E7%B3%BB%E7%BB%9F%E6%A6%82%E8%BF%B0/"/>
+    <id>http://example.com/2022/07/19/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F%E7%90%86%E8%AE%BA/%E9%AB%98%E5%B9%B6%E5%8F%91%E7%B3%BB%E7%BB%9F%E6%80%BB%E7%BB%93%E4%B9%8B%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E4%B8%80%E4%B8%AA%E9%AB%98%E5%90%9E%E5%90%90%E7%9A%84%E7%B3%BB%E7%BB%9F%E6%A6%82%E8%BF%B0/</id>
+    <published>2022-07-19T11:28:35.000Z</published>
+    <updated>2022-07-20T03:20:39.699Z</updated>
+    
+    <content type="html"><![CDATA[<ul><li>请求消息放入缓冲，批量处理，减少后续网络请求</li><li>减少使用synchronized，大量使用Atomic，volatile，cas等基于乐观思想实现的锁机制</li><li>大量采用线程池技术，支持多线程并发处理，提升处理能力，同时减少线程创建销毁性能消耗</li><li>压缩存储数据格式，少用基于java对象序列化，基于二进制保存</li><li>数据存放大都采用顺序写，提升磁盘读写性能</li><li>压缩时间复杂度，设计优秀方案、算法、数据结构，用少量空间换时间</li><li>多级缓存机制，读写各一层缓存，减少并发冲突</li><li>采用DMA，减少用户态和内核态频繁切换，减少性能消耗</li><li>采用os cache，减少磁盘IO操作，理论牺牲小部分数据丢失，增加处理能力</li><li>采用NIO，多路复用机制实现少量线程支持大量客户端连接及请求</li><li>大量使用并发安全集合，队列，列表，解决复杂数据结构并发安全，减少使用synchronized关键字，提升并发性能</li><li>采用ByteBuffer Pool，使用堆外内存，复用内存空间，减少内存开辟和销毁性能消耗</li><li>使用synchronized时，采用分段加锁机制，减少并发冲突时间等待</li><li>懒加载机制，当使用到时，采取请求数据，并且缓存。</li><li>耗时逻辑，利用数据结构和算法将耗时操作分散在各个逻辑中，比如redis中字典的扩容操作</li></ul>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;ul&gt;
+&lt;li&gt;请求消息放入缓冲，批量处理，减少后续网络请求&lt;/li&gt;
+&lt;li&gt;减少使用synchronized，大量使用Atomic，volatile，cas等基于乐观思想实现的锁机制&lt;/li&gt;
+&lt;li&gt;大量采用线程池技术，支持多线程并发处理，提升处理能力，同时减少线程创建销</summary>
+      
+    
+    
+    
+    <category term="JAVA开发" scheme="http://example.com/categories/JAVA%E5%BC%80%E5%8F%91/"/>
+    
+    
+    <category term="高并发" scheme="http://example.com/tags/%E9%AB%98%E5%B9%B6%E5%8F%91/"/>
+    
+    <category term="设计理论" scheme="http://example.com/tags/%E8%AE%BE%E8%AE%A1%E7%90%86%E8%AE%BA/"/>
+    
+  </entry>
   
   <entry>
     <title>操作系统第三步之一个新进程的诞生</title>
@@ -361,9 +390,9 @@
     
     <category term="分布式" scheme="http://example.com/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
     
-    <category term="设计理念" scheme="http://example.com/tags/%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5/"/>
-    
     <category term="主从同步" scheme="http://example.com/tags/%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5/"/>
+    
+    <category term="设计理念" scheme="http://example.com/tags/%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5/"/>
     
   </entry>
   
@@ -537,36 +566,6 @@
     <category term="数据库" scheme="http://example.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
     
     <category term="事务" scheme="http://example.com/tags/%E4%BA%8B%E5%8A%A1/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>数据库MySQL系列之MVCC浅探</title>
-    <link href="http://example.com/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8BInnoDB%E4%B8%ADMVCC%E6%B5%85%E6%8E%A2/"/>
-    <id>http://example.com/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8BInnoDB%E4%B8%ADMVCC%E6%B5%85%E6%8E%A2/</id>
-    <published>2022-02-23T03:08:57.000Z</published>
-    <updated>2022-02-23T04:21:57.866Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="MVCC简介"><a href="#MVCC简介" class="headerlink" title="MVCC简介"></a>MVCC简介</h1><h2 id="MVCC名词解释"><a href="#MVCC名词解释" class="headerlink" title="MVCC名词解释"></a>MVCC名词解释</h2><p>MVCC (Multiversion Concurrency Control)，即多版本并发控制技术。</p><h2 id="MVCC解决了什么问题"><a href="#MVCC解决了什么问题" class="headerlink" title="MVCC解决了什么问题"></a>MVCC解决了什么问题</h2><p>它使得大部分支持行锁的事务引擎（InnoDB,Falcon以及PBXT等），不再单纯的使用行锁来进行数据库的并发控制，取而代之的是把数据库的行锁与行的多个版本结合起来。<br>只需要很小的开销，就可以实现非锁定读，从而大大提高数据库系统的并发性能。</p><h2 id="锁分类"><a href="#锁分类" class="headerlink" title="锁分类"></a>锁分类</h2><ul><li><strong>读锁</strong>：也叫共享锁、S锁，若事务T对数据对象A加上S锁，则事务T可以读A但不能修改A，其他事务只能再对A加S锁，而不能加X锁，直到T释放A上的S 锁。这保证了其他事务可以读A，但在T释放A上的S锁之前不能对A做任何修改。</li><li><strong>写锁</strong>：又称排他锁、X锁。若事务T对数据对象A加上X锁，事务T可以读A也可以修改A，其他事务不能再对A加任何锁，直到T释放A上的锁。这保证了其他事务在T释放A上的锁之前不能再读取和修改A。</li><li><strong>表锁</strong>：操作对象是数据表。Mysql大多数锁策略都支持(常见mysql innodb)，是系统开销最低但并发性最低的一个锁策略。事务t对整个表加读锁，则其他事务可读不可写，若加写锁，则其他事务增删改都不行。</li><li><strong>行级锁</strong>：操作对象是数据表中的一行。是MVCC技术用的比较多的，但在MYISAM用不了，行级锁用mysql的储存引擎实现而不是mysql服务器。但行级锁对系统开销较大，处理高并发较好。</li></ul><h1 id="MVCC实现原理"><a href="#MVCC实现原理" class="headerlink" title="MVCC实现原理"></a>MVCC实现原理</h1><p>MVCC是通过保存数据在某个时间点的快照来实现的。不同存储引擎的MVCC实现是不同的，典型的有乐观并发控制和悲观并发控制。</p><h2 id="InnoDB-MVCC具体实现分析"><a href="#InnoDB-MVCC具体实现分析" class="headerlink" title="InnoDB MVCC具体实现分析"></a>InnoDB MVCC具体实现分析</h2><p>innodb MVCC主要是为<strong>Repeatable-Read事务隔离级别</strong>做的。在此隔离级别下，A、B客户端所示的数据相互隔离，互相更新不可见。</p><p>innodb存储的最基本row中包含一些额外的存储信息： DATA_TRX_ID，DATA_ROLL_PTR，DB_ROW_ID，DELETE BIT。</p><ul><li>6字节的DATA_TRX_ID 标记了最新更新这条行记录的transaction id，每处理一个事务，其值自动+1；</li><li>7字节的DATA_ROLL_PTR 指向当前记录项的rollback segment的undo log记录，找之前版本的数据就是通过这个指针；</li><li>6字节的DB_ROW_ID，当由innodb自动产生聚集索引时，聚集索引包括这个DB_ROW_ID的值，否则聚集索引中不包括这个值，这个用于索引当中；</li><li>DELETE BIT位用于标识该记录是否被删除，这里的不是真正的删除数据，而是标志出来的删除，真正意义的删除是在commit的时候。</li></ul><p><img src="/2022/02/23/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E7%B3%BB%E5%88%97%E4%B9%8BInnoDB%E4%B8%ADMVCC%E6%B5%85%E6%8E%A2/img.png" alt="img.png"></p><p>具体的执行过程</p><p>begin-&gt;用排他锁锁定该行-&gt;记录redo log-&gt;记录undo log-&gt;修改当前行的值，写事务编号，回滚指针指向undo log中的修改前的行</p><p>该过程准确说是UPDATE的事务过程，其实undo log分insert和update undo log，因为insert时，原始的数据并不存在，所以回滚时把insert undo log丢弃即可，而update undo log则必须遵守上述过程。</p><h3 id="SELECT"><a href="#SELECT" class="headerlink" title="SELECT"></a>SELECT</h3><p>Innodb检查每行数据，确保他们符合两个标准：</p><ol><li><p>InnoDB只查找版本早于当前事务版本的数据行(也就是数据行的版本必须小于或等于当前事务的版本)，这确保当前事务读取的行要么是事务之前已经存在的，要么是由当前事务创建或修改的；</p></li><li><p>行的删除版本要么未定义,要么大于当前事务版本号,这可以确保事务读取到的行，在事务开始之前未被删除。</p></li></ol><p>只有a,b同时满足的记录，才能返回作为查询结果。</p><h3 id="INSERT"><a href="#INSERT" class="headerlink" title="INSERT"></a>INSERT</h3><p>InnoDB为新插入的每一行保存当前事务版本号作为版本号。</p><h3 id="DELETE"><a href="#DELETE" class="headerlink" title="DELETE"></a>DELETE</h3><p>InnoDB会为删除的每一行保存当前事务的版本号(事务的ID)作为删除标识。</p><h3 id="UPDATE"><a href="#UPDATE" class="headerlink" title="UPDATE"></a>UPDATE</h3><p>InnoDB执行UPDATE，实际上是新插入了一行记录，并保存其创建时间为当前事务的ID，同时保存当前事务ID到要UPDATE的行的删除时间。</p><h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><p>insert操作时 “创建时间”=DB_ROW_ID，这时，“删除时间 ”是未定义的；</p><p>update时，复制新增行的“创建时间”=DB_ROW_ID，删除时间未定义，旧数据行“创建时间”不变，删除时间=该事务的DB_ROW_ID；</p><p>delete操作，相应数据行的“创建时间”不变，删除时间=该事务的DB_ROW_ID；</p><p>select操作对两者都不修改，只读相应的数据</p><h1 id="对于MVCC的总结"><a href="#对于MVCC的总结" class="headerlink" title="对于MVCC的总结"></a>对于MVCC的总结</h1><p>上述更新前建立undo log，根据各种策略读取时非阻塞就是MVCC，undo log中的行就是MVCC中的多版本。</p><p>这个可能与我们所理解的MVCC有较大的出入，一般我们认为MVCC有下面几个特点：</p><ul><li>每行数据都存在一个版本，每次数据更新时都更新该版本</li><li>修改时Copy出当前版本随意修改，各个事务之间无干扰 </li><li>保存时比较版本号，如果成功（commit），则覆盖原记录；失败则放弃copy（rollback）</li></ul><p>就是每行都有版本号，保存时根据版本号决定是否成功，听起来含有乐观锁的味道。</p><p>而Innodb的实现方式是：</p><ul><li>事务以排他锁的形式修改原始数据</li><li>把修改前的数据存放于undo log，通过回滚指针与主数据关联</li><li>修改成功（commit）啥都不做，失败则恢复undo log中的数据（rollback）</li></ul><p>二者最本质的区别是，当修改数据时是否要排他锁定，如果锁定了还算不算是MVCC？ </p><p>Innodb的实现真算不上MVCC，因为并没有实现核心的多版本共存，undo log中的内容只是串行化的结果，记录了多个事务的过程，不属于多版本共存。</p><p>但理想的MVCC是难以实现的，当事务仅修改一行记录使用理想的MVCC模式是没有问题的，可以通过比较版本号进行回滚；但当事务影响到多行数据时，理想的MVCC据无能为力了。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">比如，如果Transaciton1执行理想的MVCC，修改Row1成功，而修改Row2失败，此时需要回滚Row1，但因为Row1没有被锁定，其数据可能又被Transaction2所修改，如果此时回滚Row1的内容，则会破坏Transaction2的修改结果，导致Transaction2违反ACID。</span><br></pre></td></tr></table></figure><p>理想MVCC难以实现的根本原因在于企图通过乐观锁代替二段提交。</p><p>修改两行数据，但为了保证其一致性，与修改两个分布式系统中的数据并无区别，而二提交是目前这种场景保证一致性的唯一手段。</p><p>二段提交的本质是锁定，乐观锁的本质是消除锁定，二者矛盾，故理想的MVCC难以真正在实际中被应用，Innodb只是借了MVCC这个名字，提供了读的非阻塞而已。</p>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;h1 id=&quot;MVCC简介&quot;&gt;&lt;a href=&quot;#MVCC简介&quot; class=&quot;headerlink&quot; title=&quot;MVCC简介&quot;&gt;&lt;/a&gt;MVCC简介&lt;/h1&gt;&lt;h2 id=&quot;MVCC名词解释&quot;&gt;&lt;a href=&quot;#MVCC名词解释&quot; class=&quot;headerlink&quot; </summary>
-      
-    
-    
-    
-    <category term="数据库" scheme="http://example.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
-    
-    
-    <category term="MySQL" scheme="http://example.com/tags/MySQL/"/>
-    
-    <category term="数据库" scheme="http://example.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
-    
-    <category term="InnoDB" scheme="http://example.com/tags/InnoDB/"/>
-    
-    <category term="MVCC" scheme="http://example.com/tags/MVCC/"/>
     
   </entry>
   
